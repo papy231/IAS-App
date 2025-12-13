@@ -26,6 +26,14 @@ export default function WelcomeScreen({ navigation }) {
           >
             <Text style={styles.primaryButtonText}>Let’s Start Boosting Inspiration</Text>
           </TouchableOpacity>
+
+          {/* Dev entry to new library/search screens */}
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: '#6B7280', marginTop: 12 }]}
+            onPress={() => navigation.navigate('SearchResultRN')}
+          >
+            <Text style={styles.primaryButtonText}>Go to Library (new)</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>

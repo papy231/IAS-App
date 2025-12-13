@@ -9,6 +9,12 @@ import QuickModifyScreen from './src/screens/QuickModifyScreen';
 import SearchLoadingScreen from './src/screens/SearchLoadingScreen';
 import SearchResultScreen from './src/screens/SearchResultScreen';
 import DrawScreen from './src/screens/DrawScreenFixed2';
+import RecordScreen from './src/screens/RecordScreen';
+import SearchResultRN from './src/screens/SearchResultRN';
+import FileDetailRN from './src/screens/FileDetailRN';
+import ProjectLibraryRN from './src/screens/ProjectLibraryRN';
+import FolderContentsRN from './src/screens/FolderContentsRN';
+import SavedFileDetailRN from './src/screens/SavedFileDetailRN';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,10 +30,16 @@ export default function App() {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Input" component={InputScreen} />
+        <Stack.Screen name="Record" component={RecordScreen} />
         <Stack.Screen name="Draw" component={DrawScreen} />
         <Stack.Screen name="QuickModify" component={QuickModifyScreen} />
         <Stack.Screen name="SearchLoading" component={SearchLoadingScreen} />
         <Stack.Screen name="SearchResult" component={SearchResultScreen} />
+        <Stack.Screen name="SearchResultRN" component={SearchResultRN} />
+        <Stack.Screen name="FileDetailRN" component={FileDetailRN} />
+        <Stack.Screen name="ProjectLibraryRN" component={ProjectLibraryRN} />
+        <Stack.Screen name="FolderContentsRN" component={FolderContentsRN} />
+        <Stack.Screen name="SavedFileDetailRN" component={SavedFileDetailRN} />
       </Stack.Navigator>
     </NavigationContainer>
   );

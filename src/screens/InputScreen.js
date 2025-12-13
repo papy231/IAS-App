@@ -211,7 +211,7 @@ export default function InputScreen({ navigation, route }) {
               <Text style={styles.fakeInputText}>keywords, #, explanation</Text>
             </View>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('QuickModify')}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Record')}>
               <Text style={styles.secondaryButtonText}>Record your voice</Text>
             </TouchableOpacity>
 

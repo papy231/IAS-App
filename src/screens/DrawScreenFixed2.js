@@ -12,6 +12,31 @@ function WebInlineCanvas({ navigation }) {
   const [assets, setAssets] = useState([]); // { id, src }
   const [eraser, setEraser] = useState(false);
   const [penSize, setPenSize] = useState(6);
+  const [penStyle, setPenStyle] = useState('smooth'); // smooth | marker | dashed
+  const [showPalette, setShowPalette] = useState(false);
+  const [penColor, setPenColor] = useState('#000000');
+  const trackRef = useRef(null);
+  const [trackWidth, setTrackWidth] = useState(200);
+
+  useEffect(() => {
+    // fallback to measure track width on web if onLayout didn't run yet
+    if (trackRef.current && trackRef.current.getBoundingClientRect) {
+      const w = trackRef.current.getBoundingClientRect().width;
+      if (w) setTrackWidth(w);
+    }
+  }, []);
+
+  // helper to sync ctx with current pen style
+  const applyStyle = (ctx, useEraser = false, sizeOverride) => {
+    if (!ctx) return;
+    const w = sizeOverride || penSize;
+    ctx.lineWidth = w;
+    if (penStyle === 'smooth') { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([]); }
+    else if (penStyle === 'marker') { ctx.lineCap = 'butt'; ctx.lineJoin = 'miter'; ctx.setLineDash([]); }
+    else { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([12, 8]); }
+    ctx.strokeStyle = penColor;
+    ctx.globalCompositeOperation = useEraser ? 'destination-out' : 'source-over';
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -35,10 +60,7 @@ function WebInlineCanvas({ navigation }) {
       canvas.style.height = h + 'px';
       const ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = penSize;
-      ctx.strokeStyle = '#000';
+      applyStyle(ctx, false);
       ctxRef.current = ctx;
     }
 
@@ -100,6 +122,11 @@ function WebInlineCanvas({ navigation }) {
       ctxRef.current.moveTo(p.x, p.y);
       saveSnapshot();
       e.preventDefault();
+
+      if (eraser) {
+        const size = penSize * 2;
+        ctxRef.current.clearRect(p.x - size / 2, p.y - size / 2, size, size);
+      }
     }
 
     function pointerMove(e) {
@@ -109,6 +136,7 @@ function WebInlineCanvas({ navigation }) {
         const size = penSize * 2;
         ctxRef.current.clearRect(p.x - size / 2, p.y - size / 2, size, size);
       } else {
+        ctxRef.current.globalCompositeOperation = 'source-over';
         ctxRef.current.lineWidth = penSize;
         ctxRef.current.lineTo(p.x, p.y);
         ctxRef.current.stroke();
@@ -133,7 +161,9 @@ function WebInlineCanvas({ navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { if (ctxRef.current) ctxRef.current.lineWidth = penSize; }, [penSize]);
+  useEffect(() => {
+    applyStyle(ctxRef.current, eraser);
+  }, [penSize, penStyle, penColor, eraser]);
 
   function undo() {
     const img = historyRef.current.pop();
@@ -172,7 +202,7 @@ function WebInlineCanvas({ navigation }) {
       const main = canvasRef.current; const ctx = ctxRef.current;
       const dw = Math.min(120, main.clientWidth * 0.25);
       const dh = (img.height / img.width) * dw;
-      const x = (main.clientWidth - dw) / 2; const y = (main.clientHeight - dh) / 2;
+      const x = (main.clientWidth - dw) / 2; const y = Math.max(12, main.clientHeight * 0.06);
       ctx.drawImage(img, x, y, dw, dh);
     };
     img.src = src;
@@ -184,7 +214,7 @@ function WebInlineCanvas({ navigation }) {
       const main = canvasRef.current; const ctx = ctxRef.current;
       const dw = Math.min(120, main.clientWidth * 0.25);
       const dh = (img.height / img.width) * dw;
-      const x = (main.clientWidth - dw) / 2; const y = (main.clientHeight - dh) / 2;
+      const x = (main.clientWidth - dw) / 2; const y = Math.max(12, main.clientHeight * 0.06);
       ctx.drawImage(img, x, y, dw, dh);
     };
     img.src = src;
@@ -198,7 +228,7 @@ function WebInlineCanvas({ navigation }) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity onPress={addPictureClick} style={styles.pill}><Text>Add picture to the canvas</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => {}} style={styles.pill}><Text>Add icon, shapes, styles</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowPalette(true)} style={styles.pill}><Text>Add icon, shapes, styles</Text></TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => setEraser(!eraser)} style={[styles.toolBtn, eraser ? styles.toolActive : null]}><Text>{eraser ? 'Eraser On' : 'Eraser'}</Text></TouchableOpacity>
@@ -223,68 +253,105 @@ function WebInlineCanvas({ navigation }) {
           ))}
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-          <Text style={{ marginRight: 8 }}>Pen size</Text>
-          {[4,6,10,16].map(s => (
-            <TouchableOpacity key={s} onPress={() => { setPenSize(s); setEraser(false); }} style={[styles.sizeDot, penSize===s ? styles.sizeActive : null]} />
+      </View>
+
+      {/* Pen style, color, eraser, size slider */}
+      <View style={{ paddingHorizontal: 8, paddingTop: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <Text style={{ marginRight: 8 }}>Pen</Text>
+          {[
+            { key: 'smooth', label: 'Smooth' },
+            { key: 'marker', label: 'Marker' },
+            { key: 'dashed', label: 'Dashed' },
+          ].map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => { setPenStyle(opt.key); setEraser(false); }}
+              style={[styles.toolBtn, penStyle === opt.key ? styles.toolActive : null, { marginRight: 6 }]}
+            >
+              <Text>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <Text style={{ fontSize: 20, marginRight: 12 }}>✏️</Text>
+          {['#1abc4b', '#c31919', '#fa6868', '#c6d8ff', '#a8e6cf', '#000000'].map((c) => (
+            <TouchableOpacity key={c} onPress={() => { setPenColor(c); setEraser(false); }} style={[styles.colorDot, { backgroundColor: c }, penColor === c ? styles.colorActive : null]} />
+          ))}
+          <TouchableOpacity onPress={() => { setEraser((v) => !v); }} style={{ marginLeft: 12 }}>
+            <Text style={{ fontSize: 22 }}>{eraser ? '🧽✅' : '🧽'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View
+          ref={trackRef}
+          onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderMove={(e) => {
+            const loc = e.nativeEvent.locationX;
+            const clamped = Math.max(0, Math.min(loc, trackWidth));
+            const min = 2; const max = 24;
+            const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
+            setPenSize(Math.round(size));
+            setEraser(false);
+          }}
+          onResponderGrant={(e) => {
+            const loc = e.nativeEvent.locationX;
+            const clamped = Math.max(0, Math.min(loc, trackWidth));
+            const min = 2; const max = 24;
+            const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
+            setPenSize(Math.round(size));
+            setEraser(false);
+          }}
+          style={styles.sliderTrack}
+        >
+          <View style={[styles.sliderThumb, { left: `${((penSize - 2) / 22) * 100}%` }]} />
+        </View>
+        <View style={{ flexDirection: 'row', marginTop: 6 }}>
+          {[4,8,12,18,24].map((s) => (
+            <TouchableOpacity key={s} onPress={() => { setPenSize(s); setEraser(false); }} style={[styles.sizeDot, penSize === s ? styles.sizeActive : null, { marginRight: 6 }]}>
+              <Text style={{ color: '#fff', fontSize: 10, textAlign: 'center' }}>{s}</Text>
+            </TouchableOpacity>
           ))}
         </View>
       </View>
+
+      {showPalette && (
+        <View style={styles.overlay}>
+          <View style={styles.paletteCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontWeight: '600', fontSize: 16 }}>Icons & Emojis</Text>
+              <TouchableOpacity onPress={() => setShowPalette(false)}><Text style={{ fontSize: 16 }}>✕</Text></TouchableOpacity>
+            </View>
+            <Text style={{ color: '#6b7280', marginBottom: 8 }}>Tap to add to canvas</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {['✅','❌','⭐','❤️','🔥','🎯','📌','⬜️','⬛️','🔺','🔻','🔵','🟢','🟡','🟣','🔶'].map(sym => (
+                <TouchableOpacity key={sym} onPress={() => { addEmojiToCanvas(sym); setShowPalette(false); }} style={styles.assetThumb}>
+                  <Text style={{ fontSize: 24 }}>{sym}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 export default function DrawScreenFixed({ navigation }) {
-  const webRef = useRef(null);
-
-  useEffect(() => {
-    function handler(e) {
-      try {
-        const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (msg && msg.type === 'export' && msg.data) {
-          navigation.navigate('Input', { drawingData: msg.data });
-        }
-      } catch (err) {}
-    }
-    if (Platform.OS === 'web') {
-      window.addEventListener('message', handler);
-      return () => window.removeEventListener('message', handler);
-    }
-    return undefined;
-  }, [navigation]);
-
-  const html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body><div id="root"></div></body></html>';
+  if (Platform.OS === 'web') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <WebInlineCanvas navigation={navigation} />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      {Platform.OS === 'web' ? (
-        <WebInlineCanvas navigation={navigation} />
-      ) : (
-        (() => {
-          let WebViewComp = null;
-          try { WebViewComp = require('react-native-webview').WebView; } catch (e) { WebViewComp = null; }
-          if (!WebViewComp) {
-            return (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: 'red' }}>WebView is not available on this platform.</Text>
-              </View>
-            );
-          }
-          return (
-            <WebViewComp
-              ref={webRef}
-              originWhitelist={["*"]}
-              source={{ html }}
-              onMessage={(e) => {
-                try { const msg = JSON.parse(e.nativeEvent.data); if (msg.type === 'export' && msg.data) navigation.navigate('Input', { drawingData: msg.data }); } catch (err) {}
-              }}
-              javaScriptEnabled
-              domStorageEnabled
-              style={{ flex: 1 }}
-            />
-          );
-        })()
-      )}
+    <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: '#111' }}>Drawing is available on web only for now.</Text>
     </SafeAreaView>
   );
 }
@@ -297,4 +364,10 @@ const styles = StyleSheet.create({
   assetThumb: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' },
   sizeDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#111', marginRight: 8 },
   sizeActive: { borderWidth: 3, borderColor: '#4B5563' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
+  paletteCard: { width: '90%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  colorDot: { width: 32, height: 32, borderRadius: 16, marginRight: 10 },
+  colorActive: { borderWidth: 3, borderColor: '#4B5563' },
+  sliderTrack: { height: 18, borderRadius: 9, backgroundColor: '#e5e7eb', justifyContent: 'center' },
+  sliderThumb: { position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: '#000', borderWidth: 2, borderColor: '#fff', marginTop: -7 },
 });
