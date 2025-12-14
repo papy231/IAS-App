@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function SearchLoadingScreen({ navigation }) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.replace('SearchResult');
+      navigation.replace('SearchResultRN');
     }, 2000);
     return () => clearTimeout(timer);
   }, []);

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AuthScreen from './src/screens/AuthScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import WelcomeScreen from './src/screens/WelcomeScrren';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 import InputScreen from './src/screens/InputScreen';
 import QuickModifyScreen from './src/screens/QuickModifyScreen';
 import SearchLoadingScreen from './src/screens/SearchLoadingScreen';
@@ -15,6 +15,9 @@ import FileDetailRN from './src/screens/FileDetailRN';
 import ProjectLibraryRN from './src/screens/ProjectLibraryRN';
 import FolderContentsRN from './src/screens/FolderContentsRN';
 import SavedFileDetailRN from './src/screens/SavedFileDetailRN';
+import DrawScreenFixed2 from './src/screens/DrawScreenFixed2';
+import InputOverviewScreen from './src/screens/InputOverviewScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -30,8 +33,9 @@ export default function App() {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Input" component={InputScreen} />
+        <Stack.Screen name="InputOverview" component={InputOverviewScreen} />
         <Stack.Screen name="Record" component={RecordScreen} />
-        <Stack.Screen name="Draw" component={DrawScreen} />
+        <Stack.Screen name="Draw" component={DrawScreenFixed2} />
         <Stack.Screen name="QuickModify" component={QuickModifyScreen} />
         <Stack.Screen name="SearchLoading" component={SearchLoadingScreen} />
         <Stack.Screen name="SearchResult" component={SearchResultScreen} />

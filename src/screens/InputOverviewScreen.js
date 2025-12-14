@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
-import { fileResults } from '../data/libraryData';
-import { palette } from '../theme/colors';
 
 let BlurViewComponent = View;
 try {
@@ -19,29 +17,55 @@ const iconMap = {
   png: ImageIcon,
   pdf: FileText,
   xlsx: FileText,
-  doc: FileText,
 };
 
-export default function SearchResultRN({ navigation }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+const initialFiles = [
+  { id: 'f1', type: 'pdf' },
+  { id: 'f2', type: 'jpg' },
+  { id: 'f3', type: 'xlsx' },
+  { id: 'f4', type: 'pdf' },
+  { id: 'f5', type: 'jpg' },
+  { id: 'f6', type: 'xlsx' },
+  { id: 'f7', type: 'xlsx' },
+  { id: 'f8', type: 'pdf' },
+  { id: 'f9', type: 'xlsx' },
+  { id: 'f10', type: 'mp4' },
+];
 
-  const renderItem = ({ item, index }) => {
+export default function InputOverviewScreen({ navigation, route }) {
+  const currentRoute = route?.name || 'InputOverview';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [files, setFiles] = useState(initialFiles);
+
+  const removeItem = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const renderItem = ({ item }) => {
     const IconComp = iconMap[item.type] || File;
     return (
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('FileDetailRN', { index })}>
-        <View style={[styles.iconWrap, { backgroundColor: item.color }]}>
-          <IconComp size={28} color={palette.foreground} strokeWidth={2} />
+      <View style={styles.listItem}>
+        <View style={styles.iconWrap}>
+          <IconComp size={28} color="#111827" strokeWidth={2.2} />
         </View>
-        <Text style={styles.type}>{item.type.toUpperCase()}</Text>
-      </TouchableOpacity>
+        <View style={styles.meta}>
+          <Text style={styles.fileName}>{`File ${item.id.toUpperCase()}`}</Text>
+          <Text style={styles.fileType}>{item.type.toUpperCase()}</Text>
+        </View>
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => removeItem(item.id)}>
+          <Ionicons name="remove-circle" size={22} color="#111827" />
+        </TouchableOpacity>
+      </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.title}>Search Result</Text>
+    <SafeAreaView style={styles.root}>
+      <View style={styles.headerBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('QuickModify')}>
+          <Ionicons name="arrow-back" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Input File Overview</Text>
         <TouchableOpacity style={styles.menuButton} onPress={() => setMenuOpen(true)}>
           <Ionicons name="menu" size={24} color="#4B5563" />
         </TouchableOpacity>
@@ -49,11 +73,12 @@ export default function SearchResultRN({ navigation }) {
 
       <View style={styles.mainArea}>
         <FlatList
-          data={fileResults}
+          data={files}
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={3}
           contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          showsVerticalScrollIndicator={false}
         />
 
         {menuOpen && (
@@ -77,17 +102,18 @@ export default function SearchResultRN({ navigation }) {
         )}
       </View>
 
+      {/* Bottom navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Welcome')}>
           <View style={[styles.navSquare, { backgroundColor: '#9CA3AF' }]} />
           <Text style={styles.navLabel}>Start</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('QuickModify')}>
-          <View style={[styles.navCircle, { backgroundColor: '#9CA3AF' }]} />
+          <View style={[styles.navCircle, { backgroundColor: '#8B5CF6' }]} />
           <Text style={styles.navLabel}>Modify</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('SearchResultRN')}>
-          <View style={[styles.navTriangle, { borderBottomColor: '#8B5CF6' }]} />
+          <View style={[styles.navTriangle, { borderBottomColor: '#9CA3AF' }]} />
           <Text style={styles.navLabel}>Result</Text>
         </TouchableOpacity>
       </View>
@@ -96,9 +122,8 @@ export default function SearchResultRN({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#eef2ff' },
-  mainArea: { flex: 1, position: 'relative' },
-  header: {
+  root: { flex: 1, backgroundColor: '#eef2ff' },
+  headerBar: {
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 14,
@@ -109,28 +134,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#e5e7eb',
   },
-  title: { fontSize: 20, fontWeight: '600', color: palette.foreground },
-  headerSpacer: { width: 32 },
+  backButton: { padding: 6 },
+  title: { fontSize: 20, fontWeight: '600', color: '#111827' },
   menuButton: { padding: 6 },
-  list: { paddingHorizontal: 12, paddingBottom: 24, paddingTop: 6 },
-  card: {
-    flex: 1,
-    margin: 6,
+  mainArea: { flex: 1, position: 'relative', paddingHorizontal: 16, paddingTop: 12 },
+  list: { paddingTop: 12, paddingBottom: 24 },
+  listItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#E5E7EB',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
-  type: { fontSize: 12, fontWeight: '700', color: palette.foreground, marginTop: 6 },
+  meta: { flex: 1 },
+  fileName: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  fileType: { fontSize: 12, fontWeight: '700', color: '#6B7280', marginTop: 2 },
+  deleteBtn: { padding: 6 },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -154,23 +185,8 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderBottomColor: '#9CA3AF',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-start', alignItems: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.12)' },
   menuPanel: {
     width: 220,
     height: '100%',
