@@ -130,6 +130,7 @@ export default function WelcomeScreen({ navigation }) {
           <View style={styles.overlay} pointerEvents="box-none">
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
+            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
               <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('Welcome')}>
                 <Text style={styles.menuItemText}>New Search</Text>
               </TouchableOpacity>
@@ -139,9 +140,10 @@ export default function WelcomeScreen({ navigation }) {
               <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('Login')}>
                 <Text style={styles.menuItemText}>Logout</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
-                <Ionicons name="close" size={18} color="#111827" />
-              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
+              <Ionicons name="close" size={18} color="#111827" />
+            </TouchableOpacity>
             </BlurViewComponent>
           </View>
         )}
@@ -212,21 +214,22 @@ const styles = StyleSheet.create({
   navSquare: { width: 20, height: 20, borderRadius: 3 },
   navCircle: { width: 20, height: 20, borderRadius: 10 },
   navTriangle: { width: 0, height: 0, borderLeftWidth: 10, borderRightWidth: 10, borderBottomWidth: 18, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#9CA3AF' },
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-start', alignItems: 'flex-end' },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', alignItems: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.12)' },
   menuPanel: {
     width: 220,
-    height: '100%',
+    flex: 1,
     backgroundColor: '#D1D5DB',
     borderRadius: 12,
     paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   closeBtn: {
     marginTop: 'auto',
     alignSelf: 'center',
+    marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -234,6 +237,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
   },
-  menuItem: { paddingVertical: 14, marginTop: 10 },
-  menuItemText: { fontSize: 18, color: '#111827', textDecorationLine: 'underline' },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 10,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  menuItemText: { fontSize: 18, color: '#111827', fontWeight: '600' },
 });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { Menu, Search, Folder, FolderPlus, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { folders as defaultFolders, folderFiles as defaultFolderFiles } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
@@ -11,6 +12,7 @@ export default function ProjectLibraryRN({ navigation, route }) {
   const [filesByFolder, setFilesByFolder] = useState(defaultFolderFiles);
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const addFolder = () => {
     if (!name.trim()) return;
@@ -44,20 +46,27 @@ export default function ProjectLibraryRN({ navigation, route }) {
     );
   };
 
+  const goBackSmart = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('QuickModify');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={goBackSmart}>
           <ArrowLeft size={22} color={palette.foreground} />
-        </Button>
+        </TouchableOpacity>
         <Text style={styles.title}>{saveMode ? 'Save to Project' : 'Project Library'}</Text>
-        <View style={{ width: 44 }} />
+        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+          <Ionicons name="menu" size={24} color="#4B5563" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.actionsRow}>
-        <Button variant="ghost" size="icon" onPress={() => navigation.navigate('SideMenu') /* placeholder */}>
-          <Menu size={20} color={palette.foreground} />
-        </Button>
         <Button variant="ghost" size="icon">
           <Search size={20} color={palette.foreground} />
         </Button>
@@ -71,6 +80,41 @@ export default function ProjectLibraryRN({ navigation, route }) {
         numColumns={2}
         contentContainerStyle={styles.list}
       />
+
+      {menuOpen && (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
+          <View style={styles.menuPanel}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
+              <Text style={styles.menuItemText}>New Search</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('ProjectLibraryRN'); }}>
+              <Text style={styles.menuItemText}>Library</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Login'); }}>
+              <Text style={styles.menuItemText}>Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
+              <Ionicons name="close" size={18} color="#111827" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Welcome')}>
+          <View style={[styles.navSquare, { backgroundColor: '#9CA3AF' }]} />
+          <Text style={styles.navLabel}>Start</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('QuickModify')}>
+          <View style={[styles.navCircle, { backgroundColor: '#9CA3AF' }]} />
+          <Text style={styles.navLabel}>Modify</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('SearchResultRN')}>
+          <View style={[styles.navTriangle, { borderBottomColor: '#9CA3AF' }]} />
+          <Text style={styles.navLabel}>Result</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal visible={showCreate} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -98,12 +142,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#eef2ff' },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  title: { fontSize: 18, fontWeight: '700', color: palette.foreground },
+  backButton: { padding: 6 },
+  title: { fontSize: 20, fontWeight: '600', color: '#111827' },
+  menuButton: { padding: 6 },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -169,4 +219,60 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalActions: { flexDirection: 'row', alignItems: 'center' },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  navItem: { alignItems: 'center', gap: 6 },
+  navLabel: { fontSize: 11, color: '#6B7280' },
+  navSquare: { width: 20, height: 20, borderRadius: 3 },
+  navCircle: { width: 20, height: 20, borderRadius: 10 },
+  navTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 18,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#9CA3AF',
+  },
+  overlay: { position: 'absolute', top: 64, left: 0, right: 0, bottom: 64, justifyContent: 'flex-end', alignItems: 'flex-end' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.12)' },
+  menuPanel: {
+    width: 220,
+    flex: 1,
+    backgroundColor: '#D1D5DB',
+    borderRadius: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    justifyContent: 'flex-end',
+  },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 10,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  menuItemText: { fontSize: 18, color: '#111827', fontWeight: '600' },
+  closeBtn: {
+    marginTop: 'auto',
+    alignSelf: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
 });
