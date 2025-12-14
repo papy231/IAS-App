@@ -59,7 +59,7 @@ export default function RegisterScreen({ navigation }) {
 
         <TouchableOpacity 
           style={styles.registerButton}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('Weclome')}
         >
           <Text style={styles.registerButtonText}>Create Account</Text>
         </TouchableOpacity>
