@@ -67,7 +67,7 @@ export default function QuickModifyScreen({ navigation, route }) {
         </View>
 
         <View style={{ marginTop: 16 }}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Input')}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Record', { status: 'finished' })}>
             <Text style={styles.primaryButtonText}>Confirm</Text>
           </TouchableOpacity>
         </View>

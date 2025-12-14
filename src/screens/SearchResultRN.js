@@ -60,9 +60,6 @@ export default function SearchResultRN({ navigation }) {
           <View style={styles.overlay} pointerEvents="box-none">
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
-                <Ionicons name="close" size={18} color="#111827" />
-              </TouchableOpacity>
               <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
                 <Text style={styles.menuItemText}>New Search</Text>
               </TouchableOpacity>
@@ -71,6 +68,9 @@ export default function SearchResultRN({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Login'); }}>
                 <Text style={styles.menuItemText}>Logout</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
+                <Ionicons name="close" size={18} color="#111827" />
               </TouchableOpacity>
             </BlurViewComponent>
           </View>
@@ -182,19 +182,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   closeBtn: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    marginTop: 'auto',
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     backgroundColor: '#F9FAFB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   menuItem: { paddingVertical: 14, marginTop: 10 },
   menuItemText: { fontSize: 18, color: '#111827', textDecorationLine: 'underline' },

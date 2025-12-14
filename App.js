@@ -10,6 +10,7 @@ import SearchLoadingScreen from './src/screens/SearchLoadingScreen';
 import SearchResultScreen from './src/screens/SearchResultScreen';
 import DrawScreen from './src/screens/DrawScreenFixed2';
 import RecordScreen from './src/screens/RecordScreen';
+import RecordModifyScreen from './src/screens/RecordModifyScreen';
 import SearchResultRN from './src/screens/SearchResultRN';
 import FileDetailRN from './src/screens/FileDetailRN';
 import ProjectLibraryRN from './src/screens/ProjectLibraryRN';
@@ -35,6 +36,7 @@ export default function App() {
         <Stack.Screen name="Input" component={InputScreen} />
         <Stack.Screen name="InputOverview" component={InputOverviewScreen} />
         <Stack.Screen name="Record" component={RecordScreen} />
+        <Stack.Screen name="RecordModify" component={RecordModifyScreen} />
         <Stack.Screen name="Draw" component={DrawScreenFixed2} />
         <Stack.Screen name="QuickModify" component={QuickModifyScreen} />
         <Stack.Screen name="SearchLoading" component={SearchLoadingScreen} />

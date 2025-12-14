@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function RecordScreen({ navigation }) {
-  const [status, setStatus] = useState('idle'); // idle | recording | finished
+export default function RecordScreen({ navigation, route }) {
+  const [status, setStatus] = useState(route?.params?.status || 'idle'); // idle | recording | finished
   const [bars, setBars] = useState(() => Array.from({ length: 18 }, () => 4));
   const timerRef = useRef(null);
 
@@ -47,11 +47,11 @@ export default function RecordScreen({ navigation }) {
   }
 
   function goModify() {
-    navigation.navigate('QuickModify', { recordings });
+    navigation.navigate('RecordModify', { recordings });
   }
 
   function confirmAndExit() {
-    navigation.navigate('Input');
+    navigation.navigate('Welcome');
   }
 
   return (
