@@ -24,9 +24,7 @@ export default function QuickModifyScreen({ navigation, route }) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#111" />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="close" size={22} color="#9CA3AF" />
-          </TouchableOpacity>
+          <View />
         </View>
 
         <View style={styles.contentRow}>
@@ -67,8 +65,8 @@ export default function QuickModifyScreen({ navigation, route }) {
         </View>
 
         <View style={{ marginTop: 16 }}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Record', { status: 'finished' })}>
-            <Text style={styles.primaryButtonText}>Confirm</Text>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#22c55e' }]} onPress={() => navigation.navigate('Record', { status: 'finished' })}>
+            <Text style={styles.primaryButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

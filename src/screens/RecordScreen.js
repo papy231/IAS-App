@@ -37,7 +37,11 @@ export default function RecordScreen({ navigation, route }) {
     setStatus('recording');
   }
 
-  function stopRecording() {
+  function togglePauseResume() {
+    setStatus((prev) => (prev === 'recording' ? 'paused' : 'recording'));
+  }
+
+  function validateRecording() {
     setStatus('finished');
   }
 
@@ -51,7 +55,7 @@ export default function RecordScreen({ navigation, route }) {
   }
 
   function confirmAndExit() {
-    navigation.navigate('Welcome');
+    navigation.navigate('QuickModify');
   }
 
   return (
@@ -60,10 +64,7 @@ export default function RecordScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#111" />
         </TouchableOpacity>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="globe-outline" size={22} color="#4B5563" style={{ marginRight: 12 }} />
-          <Ionicons name="search" size={22} color="#4B5563" />
-        </View>
+        <View />
       </View>
 
       <View style={styles.centerArea}>
@@ -88,21 +89,39 @@ export default function RecordScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
-        {status === 'recording' && (
-          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#EF4444' }]} onPress={stopRecording}>
-            <Text style={styles.primaryText}>Stop / Validate</Text>
-          </TouchableOpacity>
+        {(status === 'recording' || status === 'paused') && (
+          <View style={{ width: '100%', alignItems: 'center' }}>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: status === 'recording' ? '#EF4444' : '#10B981' },
+              ]}
+              onPress={togglePauseResume}
+            >
+              <Text style={styles.primaryText}>{status === 'recording' ? 'Stop' : 'Continue'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.primaryButton, styles.compactPrimary, { marginTop: 12, backgroundColor: '#22c55e' }]}
+              onPress={validateRecording}
+            >
+              <Text style={styles.primaryText}>Validate</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {status === 'finished' && (
           <View style={{ width: '100%' }}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={goModify}>
+            <TouchableOpacity style={[styles.secondaryButton, styles.compactButton]} onPress={goModify}>
               <Text style={styles.secondaryText}>Modify</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.secondaryButton, { marginTop: 12 }]} onPress={resetRecording}>
+            <TouchableOpacity style={[styles.secondaryButton, styles.compactButton, { marginTop: 10 }]} onPress={resetRecording}>
               <Text style={styles.secondaryText}>New Recording</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.primaryButton, { marginTop: 16, backgroundColor: '#6B7280' }]} onPress={confirmAndExit}>
+            <TouchableOpacity
+              style={[styles.primaryButton, styles.compactPrimary, { marginTop: 14, backgroundColor: '#22c55e' }]}
+              onPress={confirmAndExit}
+            >
               <Text style={styles.primaryText}>Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -128,6 +147,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
   },
+  compactPrimary: { minWidth: 140, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
   primaryText: { color: '#fff', fontSize: 16 },
   secondaryButton: {
     borderWidth: 1,
@@ -136,6 +156,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     alignItems: 'center',
+    alignSelf: 'center',
+    width: '80%',
+    maxWidth: 280,
   },
+  compactButton: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, width: '80%', maxWidth: 280, alignSelf: 'center' },
   secondaryText: { color: '#111', fontSize: 15 },
 });

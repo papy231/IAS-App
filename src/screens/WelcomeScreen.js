@@ -113,7 +113,20 @@ export default function WelcomeScreen({ navigation }) {
               <Text style={styles.actionButtonText}>Draw</Text>
             </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={openFilePicker}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={async () => {
+              try {
+                const picker = await import('expo-document-picker');
+                const result = await picker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
+                if (result && result.type !== 'cancel') {
+                  navigation.navigate('QuickModify', { files: result });
+                }
+              } catch (e) {
+                console.warn('file-pick-error', e);
+              }
+            }}
+          >
             <Text style={styles.actionButtonText}>Upload your Files</Text>
           </TouchableOpacity>
 

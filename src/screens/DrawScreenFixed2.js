@@ -1,42 +1,96 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 function WebInlineCanvas({ navigation }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const drawingRef = useRef(false);
-  const historyRef = useRef([]);
   const fileInputRef = useRef(null);
 
-  const [assets, setAssets] = useState([]); // { id, src }
-  const [eraser, setEraser] = useState(false);
+  const [canvasElements, setCanvasElements] = useState([]);
+  const elementsRef = useRef([]);
+
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+  const dragRef = useRef({ activeId: null, originX: 0, originY: 0, startX: 0, startY: 0 });
+  const lastTapRef = useRef({});
+
+  const [tool, setTool] = useState('pen');
   const [penSize, setPenSize] = useState(6);
-  const [penStyle, setPenStyle] = useState('smooth'); // smooth | marker | dashed
-  const [showPalette, setShowPalette] = useState(false);
+  const [penStyle, setPenStyle] = useState('smooth');
   const [penColor, setPenColor] = useState('#000000');
+
+  // Keep live refs so canvas handlers always see the latest values without recreating the canvas.
+  const toolRef = useRef(tool);
+  const penSizeRef = useRef(penSize);
+  const penStyleRef = useRef(penStyle);
+  const penColorRef = useRef(penColor);
+
+  const updateTool = (next) => { toolRef.current = next; setTool(next); };
+  const updateSize = (next) => { penSizeRef.current = next; setPenSize(next); };
+  const updateStyle = (next) => { penStyleRef.current = next; setPenStyle(next); updateTool('pen'); };
+  const updateColor = (next) => { penColorRef.current = next; setPenColor(next); updateTool('pen'); };
+  const [showPalette, setShowPalette] = useState(false);
+
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(200);
 
   useEffect(() => {
-    // fallback to measure track width on web if onLayout didn't run yet
     if (trackRef.current && trackRef.current.getBoundingClientRect) {
       const w = trackRef.current.getBoundingClientRect().width;
       if (w) setTrackWidth(w);
     }
   }, []);
 
-  // helper to sync ctx with current pen style
-  const applyStyle = (ctx, useEraser = false, sizeOverride) => {
+  const clampPos = (x, y, size) => {
+    const w = canvasSize.w || 0;
+    const h = canvasSize.h || 0;
+    return {
+      x: Math.min(Math.max(x, 0), Math.max(w - size, 0)),
+      y: Math.min(Math.max(y, 0), Math.max(h - size, 0)),
+    };
+  };
+
+  const cycleScale = (current) => {
+    const steps = [0.6, 1, 1.4];
+    const idx = steps.findIndex((s) => Math.abs(s - current) < 0.05);
+    return steps[(idx + 1) % steps.length];
+  };
+
+  const syncElements = (next) => {
+    elementsRef.current = next;
+    setCanvasElements(next);
+  };
+
+  const applyStyle = (ctx, { useEraser = false, sizeOverride, colorVal, styleVal } = {}) => {
     if (!ctx) return;
-    const w = sizeOverride || penSize;
-    ctx.lineWidth = w;
-    if (penStyle === 'smooth') { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([]); }
-    else if (penStyle === 'marker') { ctx.lineCap = 'butt'; ctx.lineJoin = 'miter'; ctx.setLineDash([]); }
+    const width = sizeOverride || penSizeRef.current;
+    const style = styleVal || penStyleRef.current;
+    const color = colorVal || penColorRef.current;
+    ctx.lineWidth = width;
+    if (style === 'smooth') { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([]); }
+    else if (style === 'marker') { ctx.lineCap = 'butt'; ctx.lineJoin = 'miter'; ctx.setLineDash([]); }
     else { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([12, 8]); }
-    ctx.strokeStyle = penColor;
+    ctx.strokeStyle = color;
     ctx.globalCompositeOperation = useEraser ? 'destination-out' : 'source-over';
   };
+
+  useEffect(() => {
+    toolRef.current = tool;
+  }, [tool]);
+
+  useEffect(() => {
+    penSizeRef.current = penSize;
+  }, [penSize]);
+
+  useEffect(() => {
+    penStyleRef.current = penStyle;
+  }, [penStyle]);
+
+  useEffect(() => {
+    penColorRef.current = penColor;
+  }, [penColor]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -44,15 +98,20 @@ function WebInlineCanvas({ navigation }) {
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
-    canvas.style.height = '55vh';
+    canvas.style.height = '100%';
     canvas.style.border = '1px solid #e5e7eb';
     canvas.style.background = '#fff';
+    canvas.style.pointerEvents = 'auto';
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.zIndex = '1';
     container.appendChild(canvas);
     canvasRef.current = canvas;
 
     function resize() {
       const w = container.clientWidth;
-      const h = Math.max(260, window.innerHeight * 0.55);
+      const h = container.clientHeight || Math.max(260, window.innerHeight * 0.5);
       const ratio = window.devicePixelRatio || 1;
       canvas.width = Math.floor(w * ratio);
       canvas.height = Math.floor(h * ratio);
@@ -60,14 +119,14 @@ function WebInlineCanvas({ navigation }) {
       canvas.style.height = h + 'px';
       const ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      applyStyle(ctx, false);
+      applyStyle(ctx, { useEraser: false });
       ctxRef.current = ctx;
     }
 
     resize();
     window.addEventListener('resize', resize);
+    // initial ready state
 
-    // hidden file input for adding images
     const inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = 'image/*';
@@ -79,17 +138,23 @@ function WebInlineCanvas({ navigation }) {
       reader.onload = () => {
         const src = reader.result;
         const id = Date.now().toString();
-        setAssets((s) => [...s, { id, src }]);
-        // draw onto canvas centered
+        const cw = canvasRef.current?.clientWidth || 0;
+        const ch = canvasRef.current?.clientHeight || 0;
+        const dw = Math.min(160, cw * 0.5 || 160);
+        const x = (cw - dw) / 2;
+        const y = Math.max(12, ch * 0.06 || 12);
+        syncElements([...elementsRef.current, { id, type: 'image', uri: src, x, y, baseSize: dw, scale: 1 }]);
+
         const img = new Image();
         img.onload = () => {
-          const c = canvasRef.current;
-          const ctx = ctxRef.current;
-          const dw = Math.min(c.clientWidth * 0.5, img.width);
-          const dh = (img.height / img.width) * dw;
-          const x = (c.clientWidth - dw) / 2;
-          const y = (c.clientHeight - dh) / 2;
-          ctx.drawImage(img, x, y, dw, dh);
+          const c = canvasRef.current; const ctx = ctxRef.current;
+          if (!c || !ctx) return;
+          const ratio = img.height / img.width;
+          const h = dw * ratio;
+          const nx = (c.clientWidth - dw) / 2;
+          const ny = Math.max(12, c.clientHeight * 0.06);
+          ctx.drawImage(img, nx, ny, dw, h);
+          syncElements((prev) => prev.map((el) => el.id === id ? { ...el, x: nx, y: ny, baseSize: dw } : el));
         };
         img.src = src;
       };
@@ -102,45 +167,33 @@ function WebInlineCanvas({ navigation }) {
     function getLocalPos(e) {
       const rect = canvas.getBoundingClientRect();
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
       return { x, y };
     }
 
-    function saveSnapshot() {
-      try {
-        const img = ctxRef.current.getImageData(0, 0, canvas.width, canvas.height);
-        historyRef.current.push(img);
-        if (historyRef.current.length > 50) historyRef.current.shift();
-      } catch (e) {}
-    }
-
     function pointerDown(e) {
+      const currentTool = toolRef.current;
+      if (currentTool === 'select') return;
       drawingRef.current = true;
       const p = getLocalPos(e);
       if (!ctxRef.current) return;
+      const size = penSizeRef.current;
+      const useEraser = currentTool === 'eraser';
+      applyStyle(ctxRef.current, { useEraser, sizeOverride: useEraser ? size * 1.6 : size });
       ctxRef.current.beginPath();
       ctxRef.current.moveTo(p.x, p.y);
-      saveSnapshot();
       e.preventDefault();
-
-      if (eraser) {
-        const size = penSize * 2;
-        ctxRef.current.clearRect(p.x - size / 2, p.y - size / 2, size, size);
-      }
     }
 
     function pointerMove(e) {
       if (!drawingRef.current || !ctxRef.current) return;
       const p = getLocalPos(e);
-      if (eraser) {
-        const size = penSize * 2;
-        ctxRef.current.clearRect(p.x - size / 2, p.y - size / 2, size, size);
-      } else {
-        ctxRef.current.globalCompositeOperation = 'source-over';
-        ctxRef.current.lineWidth = penSize;
-        ctxRef.current.lineTo(p.x, p.y);
-        ctxRef.current.stroke();
-      }
+      const currentTool = toolRef.current;
+      const size = penSizeRef.current;
+      const useEraser = currentTool === 'eraser';
+      applyStyle(ctxRef.current, { useEraser, sizeOverride: useEraser ? size * 1.6 : size });
+      ctxRef.current.lineTo(p.x, p.y);
+      ctxRef.current.stroke();
       e.preventDefault();
     }
 
@@ -158,29 +211,17 @@ function WebInlineCanvas({ navigation }) {
       if (container.contains(canvas)) container.removeChild(canvas);
       if (fileInputRef.current && fileInputRef.current.parentElement) fileInputRef.current.parentElement.removeChild(fileInputRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    applyStyle(ctxRef.current, eraser);
-  }, [penSize, penStyle, penColor, eraser]);
-
-  function undo() {
-    const img = historyRef.current.pop();
-    if (!img || !ctxRef.current) return;
-    try { ctxRef.current.putImageData(img, 0, 0); } catch (e) {}
-  }
-
-  function clearCanvas() {
-    if (!ctxRef.current || !canvasRef.current) return;
-    try { const img = ctxRef.current.getImageData(0,0,canvasRef.current.width,canvasRef.current.height); historyRef.current.push(img); } catch(e){}
-    ctxRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-  }
+    applyStyle(ctxRef.current, { useEraser: toolRef.current === 'eraser' });
+  }, [penSize, penStyle, penColor, tool]);
 
   function exportPNG() {
     if (!canvasRef.current) return;
     const data = canvasRef.current.toDataURL('image/png');
-    navigation.navigate('Input', { drawingData: data });
+    console.log('draw-export', { data, elements: elementsRef.current });
+    navigation.navigate('QuickModify', { drawingData: data, elements: elementsRef.current });
   }
 
   function addPictureClick() { if (fileInputRef.current) fileInputRef.current.click(); }
@@ -194,127 +235,205 @@ function WebInlineCanvas({ navigation }) {
     c.font = '72px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(emoji, size/2, size/2);
     const src = off.toDataURL('image/png');
+
     const id = Date.now().toString();
-    setAssets((s) => [...s, { id, src }]);
+    const cw = canvasSize.w || (canvasRef.current ? canvasRef.current.clientWidth : 0);
+    const ch = canvasSize.h || (canvasRef.current ? canvasRef.current.clientHeight : 0);
+    const dw = Math.min(120, cw * 0.25 || 120);
+    const x = (cw - dw) / 2;
+    const y = Math.max(12, (ch || 0) * 0.06);
+    syncElements([...elementsRef.current, { id, type: 'emoji', value: emoji, src, x, y, baseSize: dw, scale: 1 }]);
 
     const img = new Image();
     img.onload = () => {
       const main = canvasRef.current; const ctx = ctxRef.current;
-      const dw = Math.min(120, main.clientWidth * 0.25);
-      const dh = (img.height / img.width) * dw;
-      const x = (main.clientWidth - dw) / 2; const y = Math.max(12, main.clientHeight * 0.06);
-      ctx.drawImage(img, x, y, dw, dh);
+      if (!main || !ctx) return;
+      ctx.drawImage(img, x, y, dw, dw);
     };
     img.src = src;
   }
 
-  function placeAssetOnCanvas(src) {
+  function addIconToCanvas(sym) {
+    const off = document.createElement('canvas');
+    const size = 120;
+    off.width = size; off.height = size;
+    const c = off.getContext('2d');
+    c.fillStyle = 'transparent'; c.fillRect(0,0,size,size);
+    c.font = '72px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(sym, size/2, size/2);
+    const src = off.toDataURL('image/png');
+
+    const id = Date.now().toString();
+    const cw = canvasSize.w || (canvasRef.current ? canvasRef.current.clientWidth : 0);
+    const ch = canvasSize.h || (canvasRef.current ? canvasRef.current.clientHeight : 0);
+    const dw = Math.min(120, cw * 0.25 || 120);
+    const x = (cw - dw) / 2;
+    const y = Math.max(12, (ch || 0) * 0.06);
+    syncElements([...elementsRef.current, { id, type: 'icon', value: sym, src, x, y, baseSize: dw, scale: 1 }]);
+
     const img = new Image();
     img.onload = () => {
       const main = canvasRef.current; const ctx = ctxRef.current;
-      const dw = Math.min(120, main.clientWidth * 0.25);
-      const dh = (img.height / img.width) * dw;
-      const x = (main.clientWidth - dw) / 2; const y = Math.max(12, main.clientHeight * 0.06);
-      ctx.drawImage(img, x, y, dw, dh);
+      if (!main || !ctx) return;
+      ctx.drawImage(img, x, y, dw, dw);
     };
     img.src = src;
   }
+
+  const selectPalette = ['#1abc4b', '#c31919', '#fa6868', '#c6d8ff', '#a8e6cf', '#000000'];
 
   return (
     <View style={{ flex: 1, padding: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8, paddingRight: 12 }}>
+          <Text style={{ fontSize: 20 }}>←</Text>
+        </TouchableOpacity>
+        <Text style={{ fontSize: 22, fontWeight: '600', color: '#374151' }}>Draw</Text>
+      </View>
       <Text style={{ textAlign: 'center', fontSize: 18, color: '#374151', marginBottom: 8 }}>Draw</Text>
-      <View ref={containerRef} style={{ flex: 1, marginBottom: 12 }} />
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={addPictureClick} style={styles.pill}><Text>Add picture to the canvas</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowPalette(true)} style={styles.pill}><Text>Add icon, shapes, styles</Text></TouchableOpacity>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => setEraser(!eraser)} style={[styles.toolBtn, eraser ? styles.toolActive : null]}><Text>{eraser ? 'Eraser On' : 'Eraser'}</Text></TouchableOpacity>
-          <TouchableOpacity onPress={undo} style={styles.toolBtn}><Text>Undo</Text></TouchableOpacity>
-          <TouchableOpacity onPress={clearCanvas} style={styles.toolBtn}><Text>Clear</Text></TouchableOpacity>
-          <TouchableOpacity onPress={exportPNG} style={styles.doneBtn}><Text style={{ color: '#fff' }}>Done</Text></TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={{ borderWidth: 1, borderColor: '#e5e7eb', padding: 12, minHeight: 140 }}>
-        <Text style={{ marginBottom: 8, color: '#6b7280' }}>Assets (click to add to canvas)</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {['🙂', '🎉', '🏆', '🧶', '⭐'].map((em) => (
-            <TouchableOpacity key={em} onPress={() => addEmojiToCanvas(em)} style={styles.assetThumb}><Text style={{ fontSize: 28 }}>{em}</Text></TouchableOpacity>
-          ))}
-          {assets.map(a => (
-            <TouchableOpacity key={a.id} onPress={() => placeAssetOnCanvas(a.src)} style={styles.assetThumb}>
-              {/* web-only thumbnail */}
-              {/* eslint-disable-next-line jsx-a11y/alt-text */}
-              <img src={a.src} style={{ width: 64, height: 64, objectFit: 'contain' }} />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-      </View>
-
-      {/* Pen style, color, eraser, size slider */}
-      <View style={{ paddingHorizontal: 8, paddingTop: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-          <Text style={{ marginRight: 8 }}>Pen</Text>
-          {[
-            { key: 'smooth', label: 'Smooth' },
-            { key: 'marker', label: 'Marker' },
-            { key: 'dashed', label: 'Dashed' },
-          ].map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              onPress={() => { setPenStyle(opt.key); setEraser(false); }}
-              style={[styles.toolBtn, penStyle === opt.key ? styles.toolActive : null, { marginRight: 6 }]}
-            >
-              <Text>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-          <Text style={{ fontSize: 20, marginRight: 12 }}>✏️</Text>
-          {['#1abc4b', '#c31919', '#fa6868', '#c6d8ff', '#a8e6cf', '#000000'].map((c) => (
-            <TouchableOpacity key={c} onPress={() => { setPenColor(c); setEraser(false); }} style={[styles.colorDot, { backgroundColor: c }, penColor === c ? styles.colorActive : null]} />
-          ))}
-          <TouchableOpacity onPress={() => { setEraser((v) => !v); }} style={{ marginLeft: 12 }}>
-            <Text style={{ fontSize: 22 }}>{eraser ? '🧽✅' : '🧽'}</Text>
-          </TouchableOpacity>
-        </View>
-
+      <View style={{ flex: 1 }}>
         <View
-          ref={trackRef}
-          onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderMove={(e) => {
-            const loc = e.nativeEvent.locationX;
-            const clamped = Math.max(0, Math.min(loc, trackWidth));
-            const min = 2; const max = 24;
-            const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
-            setPenSize(Math.round(size));
-            setEraser(false);
-          }}
-          onResponderGrant={(e) => {
-            const loc = e.nativeEvent.locationX;
-            const clamped = Math.max(0, Math.min(loc, trackWidth));
-            const min = 2; const max = 24;
-            const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
-            setPenSize(Math.round(size));
-            setEraser(false);
-          }}
-          style={styles.sliderTrack}
+          ref={containerRef}
+          onLayout={(e) => setCanvasSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+          style={{ flex: 1, position: 'relative', marginBottom: 12, pointerEvents: 'box-none', overflow: 'hidden', backgroundColor: '#fff' }}
         >
-          <View style={[styles.sliderThumb, { left: `${((penSize - 2) / 22) * 100}%` }]} />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: tool === 'select' ? 'auto' : 'none', zIndex: 5 }}>
+            {canvasElements.map((el) => {
+              const size = (el.baseSize || 48) * (el.scale || 1);
+              const fontSize = size;
+              const isSelect = tool === 'select';
+              const content = el.value || '';
+              const source = el.src;
+              return (
+                <View
+                  key={el.id}
+                  style={{ position: 'absolute', left: el.x, top: el.y }}
+                  pointerEvents={isSelect ? 'auto' : 'none'}
+                  onStartShouldSetResponder={() => isSelect}
+                  onResponderGrant={(evt) => {
+                    const { pageX, pageY } = evt.nativeEvent;
+                    dragRef.current = { activeId: el.id, originX: el.x, originY: el.y, startX: pageX, startY: pageY };
+
+                    const now = Date.now();
+                    const last = lastTapRef.current[el.id] || 0;
+                    if (now - last < 300) {
+                      const next = cycleScale(el.scale || 1);
+                      syncElements(elementsRef.current.map((it) => it.id === el.id ? { ...it, scale: next } : it));
+                    }
+                    lastTapRef.current[el.id] = now;
+                  }}
+                  onResponderMove={(evt) => {
+                    if (dragRef.current.activeId !== el.id) return;
+                    const { pageX, pageY } = evt.nativeEvent;
+                    const dx = pageX - dragRef.current.startX;
+                    const dy = pageY - dragRef.current.startY;
+                    const newX = dragRef.current.originX + dx;
+                    const newY = dragRef.current.originY + dy;
+                    const clamped = clampPos(newX, newY, size);
+                    syncElements(elementsRef.current.map((it) => it.id === el.id ? { ...it, x: clamped.x, y: clamped.y } : it));
+                  }}
+                  onResponderRelease={() => { dragRef.current = { activeId: null, originX: 0, originY: 0, startX: 0, startY: 0 }; }}
+                  onResponderTerminate={() => { dragRef.current = { activeId: null, originX: 0, originY: 0, startX: 0, startY: 0 }; }}
+                >
+                  {source ? (
+                    <img src={source} style={{ width: size, height: size, objectFit: 'contain' }} alt="" />
+                  ) : (
+                    <Text style={{ fontSize, transform: [{ scale: el.scale || 1 }] }}>{content}</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', marginTop: 6 }}>
-          {[4,8,12,18,24].map((s) => (
-            <TouchableOpacity key={s} onPress={() => { setPenSize(s); setEraser(false); }} style={[styles.sizeDot, penSize === s ? styles.sizeActive : null, { marginRight: 6 }]}>
-              <Text style={{ color: '#fff', fontSize: 10, textAlign: 'center' }}>{s}</Text>
-            </TouchableOpacity>
-          ))}
+
+        <View style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+            <View style={styles.toolbar}>
+              <View style={styles.toolbarRow}>
+                {[{key:'pen', icon:'pencil', label:'Pen'},{key:'eraser', icon:'ios-eraser', label:'Eraser'},{key:'select', icon:'hand-left', label:'Select'}].map((t) => (
+                  <TouchableOpacity key={t.key} onPress={() => { updateTool(t.key); }} style={[styles.toolButton, tool===t.key && styles.toolButtonActive]}>
+                    <Ionicons name={t.icon} size={18} color={tool===t.key ? '#111' : '#374151'} />
+                    <Text style={[styles.toolButtonText, tool===t.key && styles.toolButtonTextActive]}>{t.label}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity onPress={exportPNG} style={[styles.iconBtn, styles.saveBtn, { marginLeft: 8 }]}>
+                  <Ionicons name="checkmark" size={18} color="#fff" />
+                  <Text style={[styles.iconLabel,{color:'#fff'}]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.toolbarRow}>
+                <View style={styles.segmented}>
+                  {[{key:'smooth', label:'Smooth'}, {key:'marker', label:'Marker'}, {key:'dashed', label:'Dashed'}].map((opt) => (
+                    <TouchableOpacity key={opt.key} onPress={() => { updateStyle(opt.key); }} style={[styles.segment, penStyle===opt.key && styles.segmentActive]}>
+                      <Text style={[styles.segmentText, penStyle===opt.key && styles.segmentTextActive]}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.colorsRow}>
+                  {selectPalette.map((c) => (
+                    <TouchableOpacity key={c} onPress={() => { updateColor(c); }} style={[styles.colorDot, { backgroundColor: c }, penColor === c ? styles.colorActive : null]} />
+                  ))}
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <View
+                    ref={trackRef}
+                    onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+                    onStartShouldSetResponder={() => true}
+                    onMoveShouldSetResponder={() => true}
+                    onResponderMove={(e) => {
+                      const loc = e.nativeEvent.locationX;
+                      const clamped = Math.max(0, Math.min(loc, trackWidth));
+                      const min = 2; const max = 24;
+                      const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
+                      updateSize(Math.round(size));
+                      updateTool('pen');
+                    }}
+                    onResponderGrant={(e) => {
+                      const loc = e.nativeEvent.locationX;
+                      const clamped = Math.max(0, Math.min(loc, trackWidth));
+                      const min = 2; const max = 24;
+                      const size = min + ((max - min) * clamped) / Math.max(trackWidth, 1);
+                      updateSize(Math.round(size));
+                      updateTool('pen');
+                    }}
+                    style={styles.sliderTrack}
+                  >
+                    <View style={[styles.sliderThumb, { left: `${((penSize - 2) / 22) * 100}%` }]} />
+                  </View>
+                  <View style={styles.sliderMeta}>
+                    <Text style={styles.sliderValue}>{penSize}px</Text>
+                    <View style={{ flexDirection: 'row', marginLeft: 8 }}>
+                      {[4,8,12,18,24].map((s) => (
+                        <TouchableOpacity key={s} onPress={() => { updateSize(s); updateTool('pen'); }} style={[styles.sizeDot, penSize === s ? styles.sizeActive : null, { marginRight: 6 }]}>
+                          <Text style={{ color: '#fff', fontSize: 10, textAlign: 'center' }}>{s}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity onPress={addPictureClick} style={styles.pill}><Text>Add picture to the canvas</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowPalette(true)} style={styles.pill}><Text>Add icon, shapes, styles</Text></TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ borderWidth: 1, borderColor: '#e5e7eb', padding: 12, minHeight: 140 }}>
+              <Text style={{ marginBottom: 8, color: '#6b7280' }}>Assets (click to add to canvas)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {['🙂', '🎉', '🏆', '🧶', '⭐'].map((em) => (
+                  <TouchableOpacity key={em} onPress={() => addEmojiToCanvas(em)} style={styles.assetThumb}><Text style={{ fontSize: 28 }}>{em}</Text></TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </View>
 
@@ -328,7 +447,7 @@ function WebInlineCanvas({ navigation }) {
             <Text style={{ color: '#6b7280', marginBottom: 8 }}>Tap to add to canvas</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {['✅','❌','⭐','❤️','🔥','🎯','📌','⬜️','⬛️','🔺','🔻','🔵','🟢','🟡','🟣','🔶'].map(sym => (
-                <TouchableOpacity key={sym} onPress={() => { addEmojiToCanvas(sym); setShowPalette(false); }} style={styles.assetThumb}>
+                <TouchableOpacity key={sym} onPress={() => { addIconToCanvas(sym); setShowPalette(false); }} style={styles.assetThumb}>
                   <Text style={{ fontSize: 24 }}>{sym}</Text>
                 </TouchableOpacity>
               ))}
@@ -362,12 +481,29 @@ const styles = StyleSheet.create({
   toolActive: { backgroundColor: '#fde68a' },
   doneBtn: { padding: 10, borderRadius: 6, backgroundColor: '#4B5563', marginLeft: 6 },
   assetThumb: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' },
-  sizeDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#111', marginRight: 8 },
+  sizeDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#111', marginRight: 8, alignItems:'center', justifyContent:'center' },
   sizeActive: { borderWidth: 3, borderColor: '#4B5563' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
   paletteCard: { width: '90%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  colorDot: { width: 32, height: 32, borderRadius: 16, marginRight: 10 },
+  colorDot: { width: 28, height: 28, borderRadius: 14, marginRight: 8 },
   colorActive: { borderWidth: 3, borderColor: '#4B5563' },
-  sliderTrack: { height: 18, borderRadius: 9, backgroundColor: '#e5e7eb', justifyContent: 'center' },
-  sliderThumb: { position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: '#000', borderWidth: 2, borderColor: '#fff', marginTop: -7 },
+  sliderTrack: { height: 14, borderRadius: 7, backgroundColor: '#111', justifyContent: 'center', marginTop: 6 },
+  sliderThumb: { position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', borderWidth: 2, borderColor: '#000', marginTop: -7 },
+  toolbar: { marginTop: 12, borderTopWidth: 1, borderColor: '#e5e7eb', paddingTop: 10 },
+  toolbarRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 10, gap: 8 },
+  toolButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#f3f4f6' },
+  toolButtonActive: { backgroundColor: '#fde68a' },
+  toolButtonText: { marginLeft: 6, color: '#374151', fontWeight: '600' },
+  toolButtonTextActive: { color: '#111' },
+  iconBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: '#f9fafb' },
+  iconLabel: { marginLeft: 4, color: '#111', fontWeight: '600', fontSize: 12 },
+  saveBtn: { backgroundColor: '#22c55e' },
+  segmented: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: 12, padding: 4 },
+  segment: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10, marginRight: 4 },
+  segmentActive: { backgroundColor: '#111' },
+  segmentText: { color: '#374151', fontWeight: '600' },
+  segmentTextActive: { color: '#fff' },
+  colorsRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 8 },
+  sliderMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 6, justifyContent: 'space-between' },
+  sliderValue: { color: '#111', fontWeight: '700' },
 });
