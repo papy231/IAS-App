@@ -1,11 +1,13 @@
 // src/screens/WelcomeScreen.js
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { playTapFeedback } from '../utils/feedback';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
 try {
-  // Optional blur if expo-blur is available; falls back to plain View
+  // Optionaler Blur, falls expo-blur verfügbar ist; ansonsten einfache View
   BlurViewComponent = require('expo-blur').BlurView; // eslint-disable-line global-require
 } catch (e) {
   BlurViewComponent = View;
@@ -14,6 +16,27 @@ try {
 export default function WelcomeScreen({ navigation }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [keywords, setKeywords] = useState('');
+  const cardAnimations = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const { style: screenEntryStyle } = useEntryAnimation({ offset: 12, duration: 360 });
+
+  const withFeedback = (fn) => (...args) => {
+    playTapFeedback();
+    if (fn) fn(...args);
+  };
+
+  useEffect(() => {
+    Animated.stagger(
+      120,
+      cardAnimations.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ),
+    ).start();
+  }, [cardAnimations]);
 
   const openFilePicker = async () => {
     try {
@@ -39,8 +62,8 @@ export default function WelcomeScreen({ navigation }) {
         return;
       }
 
-      // Native path: load expo-document-picker at runtime
-      // (use require so bundler doesn't error when package is missing)
+      // Native-Pfad: expo-document-picker zur Laufzeit laden
+      // (per require, damit der Bundler nicht fehlschlägt, falls das Paket fehlt)
       // eslint-disable-next-line global-require
       const DocumentPicker = require('expo-document-picker');
       const res = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
@@ -70,29 +93,64 @@ export default function WelcomeScreen({ navigation }) {
       <View style={styles.headerBar}>
         <View style={styles.headerSpacer} />
         <Text style={styles.startTitle}>Start</Text>
-        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+        <TouchableOpacity style={styles.menuButton} onPress={withFeedback(() => setMenuOpen((prev) => !prev))}>
           <Ionicons name="menu" size={24} color="#4B5563" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mainArea}>
+      <Animated.View style={[styles.mainArea, screenEntryStyle]}>
         <View style={styles.screenPadding}>
-          {/* Scrollable content */}
+          {/* Scrollbarer Inhalt */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Card grid with square, circle, triangle */}
+            {/* Kartenraster mit Feature-Bildern */}
             <View style={styles.cardGrid}>
-              {/* Left card tilted */}
-              <View style={[styles.card, { backgroundColor: '#D1D5DB', transform: [{ rotate: '-15deg' }] }]}>
-                <Text style={styles.cardText}>Picture 1</Text>
-              </View>
-              {/* Center card */}
-              <View style={[styles.card, { backgroundColor: '#D1D5DB' }]}>
-                <Text style={styles.cardText}>Picture 2</Text>
-              </View>
-              {/* Right card tilted */}
-              <View style={[styles.card, { backgroundColor: '#D1D5DB', transform: [{ rotate: '15deg' }] }]}>
-                <Text style={styles.cardText}>Picture 3</Text>
-              </View>
+              <Animated.View style={[styles.card, styles.cardTiltLeft, styles.cardAnim, {
+                opacity: cardAnimations[0],
+                transform: [
+                  { translateY: cardAnimations[0].interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: cardAnimations[0].interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                  { rotate: '-12deg' },
+                ],
+              }]}>
+                <Image
+                  source={{ uri: 'https://images.pexels.com/photos/1192333/pexels-photo-1192333.jpeg?auto=compress&cs=tinysrgb&w=400&h=520&dpr=1' }}
+                  style={styles.cardImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.cardImageOverlay} />
+                <Text style={styles.cardText}>Search</Text>
+              </Animated.View>
+              <Animated.View style={[styles.card, styles.cardAnim, {
+                opacity: cardAnimations[1],
+                transform: [
+                  { translateY: cardAnimations[1].interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: cardAnimations[1].interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                ],
+              }]}>
+                <Image
+                  source={{ uri: 'https://images.pexels.com/photos/2228579/pexels-photo-2228579.jpeg?auto=compress&cs=tinysrgb&w=400&h=520&dpr=1' }}
+                  style={styles.cardImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.cardImageOverlay} />
+                <Text style={styles.cardText}>Publish</Text>
+              </Animated.View>
+              <Animated.View style={[styles.card, styles.cardTiltRight, styles.cardAnim, {
+                opacity: cardAnimations[2],
+                transform: [
+                  { translateY: cardAnimations[2].interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                  { scale: cardAnimations[2].interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                  { rotate: '12deg' },
+                ],
+              }]}>
+                <Image
+                  source={{ uri: 'https://images.pexels.com/photos/542619/pexels-photo-542619.jpeg?auto=compress&cs=tinysrgb&w=400&h=520&dpr=1' }}
+                  style={styles.cardImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.cardImageOverlay} />
+                <Text style={styles.cardText}>Inspire</Text>
+              </Animated.View>
             </View>
 
             {/* Input field */}
@@ -105,17 +163,17 @@ export default function WelcomeScreen({ navigation }) {
             />
 
             {/* Action buttons */}
-            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Record')}>
+            <TouchableOpacity style={styles.actionButton} onPress={withFeedback(() => navigation.navigate('Record'))}>
               <Text style={styles.actionButtonText}>Record your voice</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Draw')}>
+            <TouchableOpacity style={styles.actionButton} onPress={withFeedback(() => navigation.navigate('Draw'))}>
               <Text style={styles.actionButtonText}>Draw</Text>
             </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={async () => {
+            onPress={withFeedback(async () => {
               try {
                 const picker = await import('expo-document-picker');
                 const result = await picker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
@@ -125,7 +183,7 @@ export default function WelcomeScreen({ navigation }) {
               } catch (e) {
                 console.warn('file-pick-error', e);
               }
-            }}
+            })}
           >
             <Text style={styles.actionButtonText}>Upload your Files</Text>
           </TouchableOpacity>
@@ -133,7 +191,7 @@ export default function WelcomeScreen({ navigation }) {
             <Text style={styles.fileHint}>MP4, PDF, DOC, XLSX</Text>
 
             {/* Reset button */}
-            <TouchableOpacity style={styles.resetButton}>
+            <TouchableOpacity style={styles.resetButton} onPress={withFeedback(() => {})}>
               <Text style={styles.resetButtonText}>Reset search</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -141,38 +199,38 @@ export default function WelcomeScreen({ navigation }) {
 
         {menuOpen && (
           <View style={styles.overlay} pointerEvents="box-none">
-            <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
+            <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={withFeedback(() => setMenuOpen(false))} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
-            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('Welcome')}>
+            <View style={{ gap: 12 }}>
+              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Welcome'))}>
                 <Text style={styles.menuItemText}>New Search</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('ProjectLibraryRN')}>
+              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('ProjectLibraryRN'))}>
                 <Text style={styles.menuItemText}>Library</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('Login')}>
+              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Login'))}>
                 <Text style={styles.menuItemText}>Logout</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setMenuOpen(false)}>
+            <TouchableOpacity style={styles.closeBtn} onPress={withFeedback(() => setMenuOpen(false))}>
               <Ionicons name="close" size={18} color="#111827" />
             </TouchableOpacity>
             </BlurViewComponent>
           </View>
         )}
-      </View>
+      </Animated.View>
 
       {/* Bottom navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Welcome')}>
+        <TouchableOpacity style={styles.navItem} onPress={withFeedback(() => navigation.navigate('Welcome'))}>
           <View style={[styles.navSquare, { backgroundColor: '#8B5CF6' }]} />
           <Text style={styles.navLabel}>Start</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('QuickModify')}>
+        <TouchableOpacity style={styles.navItem} onPress={withFeedback(() => navigation.navigate('QuickModify'))}>
           <View style={[styles.navCircle, { backgroundColor: '#9CA3AF' }]} />
           <Text style={styles.navLabel}>Modify</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('SearchResultRN')}>
+        <TouchableOpacity style={styles.navItem} onPress={withFeedback(() => navigation.navigate('SearchResultRN'))}>
           <View style={[styles.navTriangle, { borderBottomColor: '#9CA3AF' }]} />
           <Text style={styles.navLabel}>Result</Text>
         </TouchableOpacity>
@@ -202,8 +260,13 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   scrollContent: { justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
   cardGrid: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 24, gap: 20, width: '100%' },
-  card: { width: 80, height: 100, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  cardText: { color: '#6B7280', fontSize: 12, fontWeight: '500', textAlign: 'center' },
+  card: { width: 110, height: 150, borderRadius: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', backgroundColor: '#D1D5DB' },
+  cardTiltLeft: {},
+  cardTiltRight: {},
+  cardAnim: { shadowColor: '#0f172a', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  cardImage: { position: 'absolute', width: '125%', height: '125%' },
+  cardImageOverlay: { position: 'absolute', width: '125%', height: '125%', backgroundColor: 'rgba(0,0,0,0.28)' },
+  cardText: { color: '#F9FAFB', fontSize: 14, fontWeight: '800', textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   inputBox: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -237,12 +300,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   closeBtn: {
-    marginTop: 'auto',
-    alignSelf: 'center',
-    marginTop: 16,
+    alignSelf: 'flex-start',
+    marginTop: 18,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,

@@ -8,12 +8,14 @@ import {
   ScrollView,
   TextInput,
   Switch,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
 try {
-  // Optional blur if expo-blur is available; falls back to plain View
+  // Optionaler Blur, falls expo-blur verfügbar ist; fällt sonst auf eine einfache View zurück
   BlurViewComponent = require('expo-blur').BlurView; // eslint-disable-line global-require
 } catch (e) {
   BlurViewComponent = View;
@@ -28,6 +30,7 @@ const checklistItems = [
 
 export default function QuickModifyScreen({ navigation, route }) {
   const currentRoute = route?.name || 'QuickModify';
+  const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [filter, setFilter] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
   const [selectedMap, setSelectedMap] = useState(() =>
@@ -49,7 +52,7 @@ export default function QuickModifyScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mainArea}>
+      <Animated.View style={[styles.mainArea, entryStyle]}>
         <View style={styles.screenPadding}>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.checklist}>
@@ -84,8 +87,8 @@ export default function QuickModifyScreen({ navigation, route }) {
               <Switch
                 value={aiEnabled}
                 onValueChange={setAiEnabled}
-                trackColor={{ false: '#D1D5DB', true: '#8B5CF6' }}
-                thumbColor={aiEnabled ? '#FFFFFF' : '#FFFFFF'}
+                trackColor={{ false: '#d7e9dd', true: '#16a34a' }}
+                thumbColor={aiEnabled ? '#ecfdf3' : '#FFFFFF'}
               />
             </View>
 
@@ -116,7 +119,7 @@ export default function QuickModifyScreen({ navigation, route }) {
             </BlurViewComponent>
           </View>
         )}
-      </View>
+      </Animated.View>
 
       {/* Bottom navigation */}
       <View style={styles.bottomNav}>
@@ -153,7 +156,7 @@ export default function QuickModifyScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#eef2ff' },
+  root: { flex: 1, backgroundColor: '#ffffff' },
   headerBar: {
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -190,16 +193,16 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#b5e0c8',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#ecfdf3',
   },
   checkboxActive: {
-    backgroundColor: '#9CA3AF',
-    borderColor: '#9CA3AF',
+    backgroundColor: '#16a34a',
+    borderColor: '#16a34a',
   },
-  checkText: { fontSize: 16, color: '#4B5563' },
+  checkText: { fontSize: 16, color: '#14532d' },
   filterInput: {
     borderWidth: 1,
     borderColor: '#9CA3AF',
@@ -211,27 +214,27 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   inputButton: {
-    backgroundColor: '#6B7280',
+    backgroundColor: '#15803d',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 20,
   },
-  inputButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  inputButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 18,
   },
-  switchLabel: { fontSize: 14, color: '#6B7280' },
+  switchLabel: { fontSize: 14, color: '#14532d' },
   primaryButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#0f3d2e',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',

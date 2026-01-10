@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function SearchLoadingScreen({ navigation }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 14, duration: 360 });
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('SearchResultRN');
@@ -11,11 +13,11 @@ export default function SearchLoadingScreen({ navigation }) {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, entryStyle]}>
       <Ionicons name="globe-outline" size={80} color="#8B5CF6" />
       <ActivityIndicator size="large" color="#8B5CF6" style={styles.loader} />
       <Text style={styles.text}>Searching...</Text>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -18,6 +18,7 @@ import FolderContentsRN from './src/screens/FolderContentsRN';
 import SavedFileDetailRN from './src/screens/SavedFileDetailRN';
 import DrawScreenFixed2 from './src/screens/DrawScreenFixed2';
 import InputOverviewScreen from './src/screens/InputOverviewScreen';
+import IntroScreen from './src/screens/IntroScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -26,10 +27,12 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="Intro"
         screenOptions={{
           headerShown: false,
         }}
       >
+        <Stack.Screen name="Intro" component={IntroScreen} />
         <Stack.Screen name="Login" component={AuthScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />

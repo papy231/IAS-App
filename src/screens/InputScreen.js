@@ -12,15 +12,18 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
+  Animated,
 } from 'react-native';
-// Optional native/web packages (expo-document-picker, expo-file-system, expo-av, react-native-webview)
-// are required only on native devices. To avoid bundler errors when those packages
-// are not installed (common in web-only dev), we load them dynamically where needed
-// and provide web fallbacks.
+// Optionale Native/Web-Pakete (expo-document-picker, expo-file-system, expo-av, react-native-webview)
+// werden nur auf nativen Geräten benötigt. Um Bundler-Fehler zu vermeiden, wenn diese Pakete
+// nicht installiert sind (häufig in Web-only-Setups), laden wir sie dynamisch bei Bedarf
+// und bieten Web-Fallbacks an.
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function InputScreen({ navigation, route }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null); // { uri, type, name }
   const [uploadingMap, setUploadingMap] = useState({});
@@ -39,7 +42,7 @@ export default function InputScreen({ navigation, route }) {
   async function pickFiles() {
     try {
       if (Platform.OS === 'web') {
-        // Web fallback: create a hidden file input and use it to pick a file
+        // Web-Fallback: verstecktes File-Input erzeugen und zur Dateiauswahl nutzen
         const input = document.createElement('input');
         input.type = 'file';
         input.onchange = (e) => {
@@ -60,8 +63,8 @@ export default function InputScreen({ navigation, route }) {
         return;
       }
 
-      // Native path: load expo-document-picker at runtime
-      // (use require so bundler doesn't error when package is missing)
+      // Native-Pfad: expo-document-picker zur Laufzeit laden
+      // (per require, damit der Bundler nicht fehlschlägt, falls das Paket fehlt)
       // eslint-disable-next-line global-require
       const DocumentPicker = require('expo-document-picker');
       const res = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
@@ -103,7 +106,7 @@ export default function InputScreen({ navigation, route }) {
     }
   }
 
-  // Accept drawing result from DrawScreen when navigating back
+  // Zeichnungsergebnis vom DrawScreen übernehmen, wenn zurück navigiert wird
   useEffect(() => {
     if (route?.params?.drawingData) {
       const data = route.params.drawingData;
@@ -115,13 +118,13 @@ export default function InputScreen({ navigation, route }) {
         id: Date.now() + Math.random(),
       };
       setFiles((p) => [item, ...p]);
-      // clear param so repeated navigation doesn't duplicate
+      // Parameter leeren, damit mehrfaches Navigieren nicht dupliziert
       navigation.setParams({ drawingData: undefined });
     }
   }, [route?.params?.drawingData]);
 
   useEffect(() => {
-    // load text content for text files when preview opens
+    // Textinhalt für Textdateien laden, sobald die Vorschau geöffnet wird
     let mounted = true;
     async function loadText() {
       if (!preview) return;
@@ -130,7 +133,7 @@ export default function InputScreen({ navigation, route }) {
         try {
           setPreviewLoading(true);
           if (Platform.OS === 'web' && preview._file) {
-            // For files selected on web (created via input), read with FileReader
+            // Für im Web gewählte Dateien (über Input erstellt) per FileReader lesen
             const fr = new FileReader();
             fr.onload = () => {
               if (mounted) setPreviewText(fr.result);
@@ -140,12 +143,12 @@ export default function InputScreen({ navigation, route }) {
             };
             fr.readAsText(preview._file);
           } else if (Platform.OS === 'web') {
-            // remote URL on web: fetch and read as text
+            // Externe URL im Web: laden und als Text lesen
             const r = await fetch(preview.uri);
             const text = await r.text();
             if (mounted) setPreviewText(text);
           } else {
-            // Native: try to load expo-file-system dynamically
+            // Native: expo-file-system dynamisch laden
             // eslint-disable-next-line global-require
             const FileSystem = require('expo-file-system');
             const content = await FileSystem.readAsStringAsync(preview.uri, { encoding: FileSystem.EncodingType.UTF8 });
@@ -163,7 +166,7 @@ export default function InputScreen({ navigation, route }) {
     return () => { mounted = false; };
   }, [preview]);
 
-  // Simulated upload progress (frontend-only)
+  // Simulierter Upload-Fortschritt (nur Frontend)
   function simulateUpload(file) {
     setUploadingMap((m) => ({ ...m, [file.id]: { progress: 0, status: 'uploading' } }));
     let p = 0;
@@ -190,111 +193,113 @@ export default function InputScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.screenPadding}>
-        <Hamburger />
+      <Animated.View style={[styles.container, entryStyle]}>
+        <ScrollView style={styles.screenPadding}>
+          <Hamburger />
 
-        <View style={{ marginTop: 24 }}>
-          <View style={styles.cardsRow}>
-            <View style={styles.cardPlaceholder}>
-              <Text style={styles.cardText}>Picture 1</Text>
-            </View>
-            <View style={[styles.cardPlaceholder, { marginHorizontal: 10 }]}>
-              <Text style={styles.cardText}>Picture 2</Text>
-            </View>
-            <View style={styles.cardPlaceholder}>
-              <Text style={styles.cardText}>Picture 3</Text>
-            </View>
-          </View>
-
-          <View style={{ alignItems: 'center' }}>
-            <View style={styles.fakeInput}>
-              <Text style={styles.fakeInputText}>keywords, #, explanation</Text>
+          <View style={{ marginTop: 24 }}>
+            <View style={styles.cardsRow}>
+              <View style={styles.cardPlaceholder}>
+                <Text style={styles.cardText}>Picture 1</Text>
+              </View>
+              <View style={[styles.cardPlaceholder, { marginHorizontal: 10 }]}>
+                <Text style={styles.cardText}>Picture 2</Text>
+              </View>
+              <View style={styles.cardPlaceholder}>
+                <Text style={styles.cardText}>Picture 3</Text>
+              </View>
             </View>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Record')}>
-              <Text style={styles.secondaryButtonText}>Record your voice</Text>
-            </TouchableOpacity>
+            <View style={{ alignItems: 'center' }}>
+              <View style={styles.fakeInput}>
+                <Text style={styles.fakeInputText}>keywords, #, explanation</Text>
+              </View>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={pickFiles}>
-              <Text style={styles.secondaryButtonText}>Upload your files (MP4, PDF, DOC, XLSX)</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Record')}>
+                <Text style={styles.secondaryButtonText}>Record your voice</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Draw')}>
-              <Text style={styles.secondaryButtonText}>Draw</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity style={styles.secondaryButton} onPress={pickFiles}>
+                <Text style={styles.secondaryButtonText}>Upload your files (MP4, PDF, DOC, XLSX)</Text>
+              </TouchableOpacity>
 
-          {/* Selected files grid */}
-          <View style={{ marginTop: 18 }}>
-            <Text style={{ marginLeft: 12, color: '#6B7280', marginBottom: 8 }}>Selected files</Text>
-            {files.length === 0 ? (
-              <Text style={{ color: '#9CA3AF', marginLeft: 12 }}>No files yet — tap "Upload your files" to pick.</Text>
-            ) : (
-              <FlatList
-                data={files}
-                keyExtractor={(i) => String(i.id)}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 12 }}
-                renderItem={({ item }) => {
-                  const uploading = uploadingMap[item.id];
-                  return (
-                    <View style={styles.fileCard}>
-                      {/* icon */}
-                      <View style={styles.fileIconWrap}>
-                        {item.name && item.name.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                          <Image source={{ uri: item.uri }} style={styles.fileThumb} />
-                        ) : item.name && item.name.match(/\.(mp4|mov)$/i) ? (
-                          <Ionicons name="videocam" size={36} color="#4B5563" />
-                        ) : item.name && item.name.match(/\.(pdf)$/i) ? (
-                          <Ionicons name="document" size={36} color="#4B5563" />
-                        ) : (
-                          <Ionicons name="folder" size={36} color="#4B5563" />
-                        )}
-                      </View>
-                      <Text numberOfLines={1} style={styles.fileName}>{item.name}</Text>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Draw')}>
+                <Text style={styles.secondaryButtonText}>Draw</Text>
+              </TouchableOpacity>
+            </View>
 
-                      <View style={styles.fileActionsRow}>
-                        <TouchableOpacity onPress={() => previewFile(item)} style={styles.fileActionBtn}>
-                          <Text style={styles.fileActionText}>Preview</Text>
+            {/* Selected files grid */}
+            <View style={{ marginTop: 18 }}>
+              <Text style={{ marginLeft: 12, color: '#6B7280', marginBottom: 8 }}>Selected files</Text>
+              {files.length === 0 ? (
+                <Text style={{ color: '#9CA3AF', marginLeft: 12 }}>No files yet — tap "Upload your files" to pick.</Text>
+              ) : (
+                <FlatList
+                  data={files}
+                  keyExtractor={(i) => String(i.id)}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 12 }}
+                  renderItem={({ item }) => {
+                    const uploading = uploadingMap[item.id];
+                    return (
+                      <View style={styles.fileCard}>
+                        {/* icon */}
+                        <View style={styles.fileIconWrap}>
+                          {item.name && item.name.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                            <Image source={{ uri: item.uri }} style={styles.fileThumb} />
+                          ) : item.name && item.name.match(/\.(mp4|mov)$/i) ? (
+                            <Ionicons name="videocam" size={36} color="#4B5563" />
+                          ) : item.name && item.name.match(/\.(pdf)$/i) ? (
+                            <Ionicons name="document" size={36} color="#4B5563" />
+                          ) : (
+                            <Ionicons name="folder" size={36} color="#4B5563" />
+                          )}
+                        </View>
+                        <Text numberOfLines={1} style={styles.fileName}>{item.name}</Text>
+
+                        <View style={styles.fileActionsRow}>
+                          <TouchableOpacity onPress={() => previewFile(item)} style={styles.fileActionBtn}>
+                            <Text style={styles.fileActionText}>Preview</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => simulateUpload(item)} style={styles.fileActionBtnOutline}>
+                            <Text style={styles.fileActionTextOutline}>{uploading && uploading.status === 'done' ? 'Done' : 'Upload'}</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={{ marginTop: 6 }}>
+                          {uploading ? (
+                            <View style={{ alignItems: 'center' }}>
+                              <Text style={{ fontSize: 12, color: '#6B7280' }}>{uploading.progress}%</Text>
+                            </View>
+                          ) : null}
+                        </View>
+
+                        <TouchableOpacity onPress={() => removeFile(item.id)} style={styles.removeBtn}>
+                          <Ionicons name="close" size={16} color="#9CA3AF" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => simulateUpload(item)} style={styles.fileActionBtnOutline}>
-                          <Text style={styles.fileActionTextOutline}>{uploading && uploading.status === 'done' ? 'Done' : 'Upload'}</Text>
-                        </TouchableOpacity>
                       </View>
+                    );
+                  }}
+                />
+              )}
+            </View>
 
-                      <View style={{ marginTop: 6 }}>
-                        {uploading ? (
-                          <View style={{ alignItems: 'center' }}>
-                            <Text style={{ fontSize: 12, color: '#6B7280' }}>{uploading.progress}%</Text>
-                          </View>
-                        ) : null}
-                      </View>
-
-                      <TouchableOpacity onPress={() => removeFile(item.id)} style={styles.removeBtn}>
-                        <Ionicons name="close" size={16} color="#9CA3AF" />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                }}
-              />
-            )}
+            <View style={styles.bottomSpacing} />
           </View>
+        </ScrollView>
 
-          <View style={styles.bottomSpacing} />
+        <View style={styles.nextArrowWrapper}>
+          <TouchableOpacity
+            style={styles.nextArrowButton}
+            onPress={() => navigation.navigate('QuickModify')}
+          >
+            <Text style={styles.nextArrowText}>›</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      </Animated.View>
 
-      <View style={styles.nextArrowWrapper}>
-        <TouchableOpacity
-          style={styles.nextArrowButton}
-          onPress={() => navigation.navigate('QuickModify')}
-        >
-          <Text style={styles.nextArrowText}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Preview modal */}
+      {/* Vorschau-Modal */}
       <Modal visible={!!preview} animationType="slide" onRequestClose={closePreview}>
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ flex: 1, padding: 12 }}>
@@ -308,7 +313,7 @@ export default function InputScreen({ navigation, route }) {
 
             <View style={{ flex: 1, marginTop: 12 }}>
               {preview && preview.name && preview.name.match(/\.(mp4|mov)$/i) ? (
-                // Video: on native use expo-av if available, on web open externally
+                // Video: auf Native expo-av nutzen (falls vorhanden), im Web extern öffnen
                 Platform.OS === 'web' ? (
                   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: '#6B7280', marginBottom: 12 }}>Video preview not inlined on web.</Text>
@@ -323,7 +328,7 @@ export default function InputScreen({ navigation, route }) {
               ) : preview && preview.name && preview.name.match(/\.(jpg|jpeg|png|gif)$/i) ? (
                 <Image source={{ uri: preview.uri }} style={{ flex: 1, resizeMode: 'contain' }} />
               ) : preview && preview.name && preview.name.match(/\.(pdf)$/i) ? (
-                // PDF: on web open externally (WebView may not be installed); on native try to use react-native-webview
+                // PDF: im Web extern öffnen (WebView evtl. nicht installiert); native versucht react-native-webview
                 Platform.OS === 'web' ? (
                   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: '#6B7280', marginBottom: 12 }}>PDF preview not inlined on web.</Text>
@@ -336,7 +341,7 @@ export default function InputScreen({ navigation, route }) {
                   React.createElement(require('react-native-webview').WebView, { source: { uri: preview.uri }, style: { flex: 1 } })
                 )
               ) : preview && preview.name && preview.name.match(/\.(txt|md|json|csv|xml)$/i) ? (
-                // Text-like files: show loaded text
+                // Textähnliche Dateien: geladenen Text anzeigen
                 previewLoading ? (
                   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <ActivityIndicator size="large" color="#4B5563" />

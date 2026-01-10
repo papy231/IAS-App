@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Animated } from 'react-native';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function RegisterScreen({ navigation }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 20 });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, entryStyle]}>
       <TouchableOpacity 
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -71,7 +74,7 @@ export default function RegisterScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

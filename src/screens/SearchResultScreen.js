@@ -6,10 +6,13 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function SearchResultScreen({ navigation }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const results = [
     { id: 1, title: 'Result 1', description: 'Matching your search criteria' },
     { id: 2, title: 'Result 2', description: 'Highly relevant content' },
@@ -20,7 +23,7 @@ export default function SearchResultScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.screenPadding}>
+      <Animated.ScrollView style={[styles.screenPadding, entryStyle]}>
         <View style={styles.headerRow}>
           <TouchableOpacity
             style={styles.backButton}
@@ -36,7 +39,7 @@ export default function SearchResultScreen({ navigation }) {
             key={result.id}
             style={styles.resultCard}
             onPress={() => {
-              // Handle result selection
+              // Ergebnis-Auswahl behandeln
             }}
           >
             <View style={styles.resultIcon}>
@@ -58,7 +61,7 @@ export default function SearchResultScreen({ navigation }) {
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function RecordScreen({ navigation, route }) {
-  const [status, setStatus] = useState(route?.params?.status || 'idle'); // idle | recording | finished
+  const { style: entryStyle } = useEntryAnimation({ offset: 16 });
+  const [status, setStatus] = useState(route?.params?.status || 'idle'); // Leerlauf | Aufnahme | abgeschlossen
   const [bars, setBars] = useState(() => Array.from({ length: 18 }, () => 4));
   const timerRef = useRef(null);
 
-  // Mock recordings list for the modify screen
+  // Mock-Aufnahmeliste für den Bearbeitungs-Screen
   const recordings = [
     { id: 'r1', name: 'Voice1.WAV' },
     { id: 'r2', name: 'Voice2.WAV' },
@@ -60,14 +62,15 @@ export default function RecordScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#111" />
+      <View style={styles.headerBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
-        <View />
+        <Text style={styles.headerTitle}>Record</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.centerArea}>
+      <Animated.View style={[styles.centerArea, entryStyle]}>
         <View style={styles.iconRow}>
           <Ionicons name="mic-outline" size={52} color="#111" />
           <Ionicons name="folder-outline" size={52} color="#111" style={{ marginLeft: 32 }} />
@@ -85,7 +88,7 @@ export default function RecordScreen({ navigation, route }) {
 
         {status === 'idle' && (
           <TouchableOpacity style={styles.primaryButton} onPress={startRecording}>
-            <Text style={styles.primaryText}>Start</Text>
+            <Text style={styles.primaryText}>Start Recording</Text>
           </TouchableOpacity>
         )}
 
@@ -102,7 +105,7 @@ export default function RecordScreen({ navigation, route }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.primaryButton, styles.compactPrimary, { marginTop: 12, backgroundColor: '#22c55e' }]}
+              style={[styles.primaryButton, { marginTop: 12, backgroundColor: '#22c55e' }]}
               onPress={validateRecording}
             >
               <Text style={styles.primaryText}>Validate</Text>
@@ -126,14 +129,27 @@ export default function RecordScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 18 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerBar: {
+    paddingHorizontal: 4,
+    paddingTop: 6,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  backButton: { padding: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+  headerSpacer: { width: 32 },
   centerArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   iconRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
   waveWrapper: { flexDirection: 'row', alignItems: 'center', height: 120, marginBottom: 24 },
@@ -157,9 +173,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
     alignSelf: 'center',
-    width: '80%',
-    maxWidth: 280,
+    minWidth: 180,
   },
-  compactButton: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, width: '80%', maxWidth: 280, alignSelf: 'center' },
+  compactButton: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, minWidth: 180, alignSelf: 'center' },
   secondaryText: { color: '#111', fontSize: 15 },
 });

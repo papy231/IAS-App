@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Menu, Search, FolderOpen, ArrowLeft, Image as ImageIcon, FileVideo, FileText } from 'lucide-react-native';
 import { folderFiles } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 const typeIcon = {
   PDF: FileText,
@@ -13,6 +14,7 @@ const typeIcon = {
 };
 
 export default function FolderContentsRN({ navigation, route }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const folderId = route?.params?.folderId;
   const folderName = route?.params?.folderName || 'Folder';
   const files = folderFiles[folderId] || [];
@@ -44,20 +46,22 @@ export default function FolderContentsRN({ navigation, route }) {
         </View>
       </View>
 
-      {files.length === 0 ? (
-        <View style={styles.empty}>
-          <FolderOpen size={48} color={palette.muted} />
-          <Text style={styles.emptyText}>This folder is empty</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={files}
-          renderItem={renderItem}
-          keyExtractor={(item, idx) => `${item.id || idx}`}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-        />
-      )}
+      <Animated.View style={[styles.contentArea, entryStyle]}>
+        {files.length === 0 ? (
+          <View style={styles.empty}>
+            <FolderOpen size={48} color={palette.muted} />
+            <Text style={styles.emptyText}>This folder is empty</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={files}
+            renderItem={renderItem}
+            keyExtractor={(item, idx) => `${item.id || idx}`}
+            numColumns={2}
+            contentContainerStyle={styles.list}
+          />
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -73,6 +77,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: '700', color: palette.foreground },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
+  contentArea: { flex: 1 },
   list: { paddingHorizontal: 12, paddingBottom: 24 },
   card: {
     flex: 1,

@@ -8,11 +8,14 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function AuthScreen({ navigation }) {
-  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const { style: entryStyle } = useEntryAnimation({ offset: 22 });
+  const [mode, setMode] = useState('login'); // "Login" oder "Registrieren"
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,72 +40,74 @@ export default function AuthScreen({ navigation }) {
         setError("Passwords don't match");
         return;
       }
-      // TODO: call registration API
+      // TODO: Registrierungs-API aufrufen
       navigation.replace('Welcome');
       return;
     }
 
-    // TODO: call login API
+    // TODO: Login-API aufrufen
     navigation.replace('Welcome');
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.container}
-      >
-        <View style={styles.centerScreen}>
-          <View style={styles.avatarCircleLarge}>
-            <Ionicons name="person" size={60} color="#8B5CF6" />
-          </View>
+      <Animated.View style={[styles.container, entryStyle]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.container}
+        >
+          <View style={styles.centerScreen}>
+            <View style={styles.avatarCircleLarge}>
+              <Ionicons name="person" size={60} color="#8B5CF6" />
+            </View>
 
-          <View style={styles.formCard}>
-            <Text style={styles.title}>{mode === 'login' ? 'Login' : 'Create account'}</Text>
+            <View style={styles.formCard}>
+              <Text style={styles.title}>{mode === 'login' ? 'Login' : 'Create account'}</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-
-            {mode === 'register' && (
               <TextInput
                 style={styles.input}
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
               />
-            )}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              {mode === 'register' && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                />
+              )}
 
-            <TouchableOpacity style={styles.primaryButton} onPress={validateAndSubmit}>
-              <Text style={styles.primaryButtonText}>{mode === 'login' ? 'Sign in' : 'Create account'}</Text>
-            </TouchableOpacity>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <View style={styles.switchRow}>
-              <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account?" : 'Already have an account?'}</Text>
-              <TouchableOpacity onPress={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>
-                <Text style={styles.switchAction}>{mode === 'login' ? ' Register' : ' Sign in'}</Text>
+              <TouchableOpacity style={styles.primaryButton} onPress={validateAndSubmit}>
+                <Text style={styles.primaryButtonText}>{mode === 'login' ? 'Sign in' : 'Create account'}</Text>
               </TouchableOpacity>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account?" : 'Already have an account?'}</Text>
+                <TouchableOpacity onPress={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>
+                  <Text style={styles.switchAction}>{mode === 'login' ? ' Register' : ' Sign in'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </Animated.View>
     </SafeAreaView>
   );
 }

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, FlatList, Animated } from 'react-native';
 import { Menu, Search, Folder, FolderPlus, Trash2, ArrowLeft } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { folders as defaultFolders, folderFiles as defaultFolderFiles } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function ProjectLibraryRN({ navigation, route }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const saveMode = route?.params?.saveMode || false;
   const [folders, setFolders] = useState(defaultFolders);
   const [filesByFolder, setFilesByFolder] = useState(defaultFolderFiles);
@@ -73,13 +75,15 @@ export default function ProjectLibraryRN({ navigation, route }) {
         <Button variant="secondary" size="md" onPress={() => setShowCreate(true)}>New Folder</Button>
       </View>
 
-      <FlatList
-        data={folders}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.list}
-      />
+      <Animated.View style={[styles.contentArea, entryStyle]}>
+        <FlatList
+          data={folders}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.list}
+        />
+      </Animated.View>
 
       {menuOpen && (
         <View style={styles.overlay} pointerEvents="box-none">
@@ -161,6 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  contentArea: { flex: 1 },
   list: {
     paddingHorizontal: 12,
     paddingBottom: 24,
@@ -242,22 +247,29 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderBottomColor: '#9CA3AF',
   },
-  overlay: { position: 'absolute', top: 64, left: 0, right: 0, bottom: 64, justifyContent: 'flex-end', alignItems: 'flex-end' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'flex-end',
+    paddingTop: 70,
+    paddingRight: 12,
+  },
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.12)' },
   menuPanel: {
     width: 220,
-    flex: 1,
     backgroundColor: '#D1D5DB',
     borderRadius: 12,
     paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    justifyContent: 'flex-end',
+    gap: 10,
   },
   menuItem: {
     paddingVertical: 12,
     paddingHorizontal: 14,
-    marginTop: 10,
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
     borderWidth: 1,
@@ -265,9 +277,8 @@ const styles = StyleSheet.create({
   },
   menuItemText: { fontSize: 18, color: '#111827', fontWeight: '600' },
   closeBtn: {
-    marginTop: 'auto',
     alignSelf: 'center',
-    marginTop: 16,
+    marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,

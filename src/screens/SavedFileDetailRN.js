@@ -1,60 +1,64 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
 import { ArrowLeft, Share2, Trash2 } from 'lucide-react-native';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function SavedFileDetailRN({ navigation, route }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 14 });
   const file = route?.params?.file;
   const folderName = route?.params?.folderName || 'Folder';
 
   if (!file) {
     return (
       <SafeAreaView style={styles.container}> 
-        <View style={styles.empty}> 
+        <Animated.View style={[styles.empty, entryStyle]}> 
           <Text style={styles.emptyText}>No file selected</Text>
-        </View>
+        </Animated.View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color={palette.foreground} />
-        </Button>
-        <View>
-          <Text style={styles.title}>{folderName}</Text>
-          <Text style={styles.subtitle}>{file.label || file.name}</Text>
+      <Animated.View style={[styles.contentArea, entryStyle]}>
+        <View style={styles.header}>
+          <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
+            <ArrowLeft size={22} color={palette.foreground} />
+          </Button>
+          <View>
+            <Text style={styles.title}>{folderName}</Text>
+            <Text style={styles.subtitle}>{file.label || file.name}</Text>
+          </View>
+          <View style={{ width: 44 }} />
         </View>
-        <View style={{ width: 44 }} />
-      </View>
 
-      <View style={styles.preview}>
-        <Text style={styles.previewType}>{(file.type || '').toUpperCase()}</Text>
-      </View>
+        <View style={styles.preview}>
+          <Text style={styles.previewType}>{(file.type || '').toUpperCase()}</Text>
+        </View>
 
-      <View style={styles.actions}>
-        <Button variant="secondary" style={{ flex: 1 }}>Modify</Button>
-        <Button variant="destructive" style={{ flex: 1, marginLeft: 10 }} onPress={() => navigation.goBack()}>
-          Delete
-        </Button>
-      </View>
+        <View style={styles.actions}>
+          <Button variant="secondary" style={{ flex: 1 }}>Modify</Button>
+          <Button variant="destructive" style={{ flex: 1, marginLeft: 10 }} onPress={() => navigation.goBack()}>
+            Delete
+          </Button>
+        </View>
 
-      <View style={styles.abstract}>
-        <Text style={styles.abstractLabel}>Abstract</Text>
-        <Text style={styles.abstractText}>{file.description}</Text>
-      </View>
+        <View style={styles.abstract}>
+          <Text style={styles.abstractLabel}>Abstract</Text>
+          <Text style={styles.abstractText}>{file.description}</Text>
+        </View>
 
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color={'#fff'} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBtnLight}>
-          <Share2 size={18} color={palette.foreground} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.goBack()}>
+            <ArrowLeft size={20} color={'#fff'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.bottomBtnLight}>
+            <Share2 size={18} color={palette.foreground} />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -115,4 +119,5 @@ const styles = StyleSheet.create({
   },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { color: '#6b7280' },
+  contentArea: { flex: 1 },
 });

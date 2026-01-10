@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
 import { fileResults } from '../data/libraryData';
 import { palette } from '../theme/colors';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
 try {
-  // Optional blur if expo-blur is available; falls back to plain View
+  // Optionaler Blur, falls expo-blur verfügbar ist; fällt sonst auf eine einfache View zurück
   BlurViewComponent = require('expo-blur').BlurView; // eslint-disable-line global-require
 } catch (e) {
   BlurViewComponent = View;
@@ -23,6 +24,7 @@ const iconMap = {
 };
 
 export default function SearchResultRN({ navigation }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [menuOpen, setMenuOpen] = useState(false);
 
   const renderItem = ({ item, index }) => {
@@ -47,7 +49,7 @@ export default function SearchResultRN({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mainArea}>
+      <Animated.View style={[styles.mainArea, entryStyle]}>
         <FlatList
           data={fileResults}
           renderItem={renderItem}
@@ -77,7 +79,7 @@ export default function SearchResultRN({ navigation }) {
             </BlurViewComponent>
           </View>
         )}
-      </View>
+      </Animated.View>
 
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Welcome')}>

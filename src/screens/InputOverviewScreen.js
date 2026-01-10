@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
 try {
-  // Optional blur if expo-blur is available; falls back to plain View
+  // Optionaler Blur, falls expo-blur verfügbar ist; fällt sonst auf eine einfache View zurück
   BlurViewComponent = require('expo-blur').BlurView; // eslint-disable-line global-require
 } catch (e) {
   BlurViewComponent = View;
@@ -34,6 +35,7 @@ const initialFiles = [
 
 export default function InputOverviewScreen({ navigation, route }) {
   const currentRoute = route?.name || 'InputOverview';
+  const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [files, setFiles] = useState(initialFiles);
 
@@ -71,7 +73,7 @@ export default function InputOverviewScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mainArea}>
+      <Animated.View style={[styles.mainArea, entryStyle]}>
         <FlatList
           data={files}
           keyExtractor={(item) => item.id}
@@ -102,7 +104,7 @@ export default function InputOverviewScreen({ navigation, route }) {
             </BlurViewComponent>
           </View>
         )}
-      </View>
+      </Animated.View>
 
       {/* Bottom navigation */}
       <View style={styles.bottomNav}>

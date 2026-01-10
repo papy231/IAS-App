@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, ScrollView, Animated } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 function WebInlineCanvas({ navigation }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 14 });
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -10,6 +12,7 @@ function WebInlineCanvas({ navigation }) {
   const fileInputRef = useRef(null);
 
   const [canvasElements, setCanvasElements] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const elementsRef = useRef([]);
 
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
@@ -21,11 +24,12 @@ function WebInlineCanvas({ navigation }) {
   const [penStyle, setPenStyle] = useState('smooth');
   const [penColor, setPenColor] = useState('#000000');
 
-  // Keep live refs so canvas handlers always see the latest values without recreating the canvas.
+  // Live-Refs halten, damit Canvas-Handler stets aktuelle Werte sehen, ohne den Canvas neu aufzubauen.
   const toolRef = useRef(tool);
   const penSizeRef = useRef(penSize);
   const penStyleRef = useRef(penStyle);
   const penColorRef = useRef(penColor);
+  const scaleDragRef = useRef({ activeId: null, startScale: 1, startX: 0 });
 
   const updateTool = (next) => { toolRef.current = next; setTool(next); };
   const updateSize = (next) => { penSizeRef.current = next; setPenSize(next); };
@@ -43,12 +47,12 @@ function WebInlineCanvas({ navigation }) {
     }
   }, []);
 
-  const clampPos = (x, y, size) => {
+  const clampPos = (x, y, boxW, boxH) => {
     const w = canvasSize.w || 0;
     const h = canvasSize.h || 0;
     return {
-      x: Math.min(Math.max(x, 0), Math.max(w - size, 0)),
-      y: Math.min(Math.max(y, 0), Math.max(h - size, 0)),
+      x: Math.min(Math.max(x, 0), Math.max(w - boxW, 0)),
+      y: Math.min(Math.max(y, 0), Math.max(h - boxH, 0)),
     };
   };
 
@@ -78,6 +82,10 @@ function WebInlineCanvas({ navigation }) {
 
   useEffect(() => {
     toolRef.current = tool;
+    // Im Auswahlmodus bekommt das Overlay die Events, indem Pointer-Events auf dem Canvas deaktiviert werden.
+    if (canvasRef.current) {
+      canvasRef.current.style.pointerEvents = tool === 'select' ? 'none' : 'auto';
+    }
   }, [tool]);
 
   useEffect(() => {
@@ -125,7 +133,7 @@ function WebInlineCanvas({ navigation }) {
 
     resize();
     window.addEventListener('resize', resize);
-    // initial ready state
+    // initialer Bereitschaftszustand
 
     const inp = document.createElement('input');
     inp.type = 'file';
@@ -138,12 +146,11 @@ function WebInlineCanvas({ navigation }) {
       reader.onload = () => {
         const src = reader.result;
         const id = Date.now().toString();
-        const cw = canvasRef.current?.clientWidth || 0;
-        const ch = canvasRef.current?.clientHeight || 0;
-        const dw = Math.min(160, cw * 0.5 || 160);
-        const x = (cw - dw) / 2;
+        const { cw, ch } = getCanvasDims();
+        const dw = Math.min(160, cw * 0.5, ch * 0.5);
+        const x = Math.max(12, (cw - dw) / 2);
         const y = Math.max(12, ch * 0.06 || 12);
-        syncElements([...elementsRef.current, { id, type: 'image', uri: src, x, y, baseSize: dw, scale: 1 }]);
+        syncElements([...elementsRef.current, { id, type: 'image', uri: src, x, y, baseWidth: dw, baseHeight: dw, baseSize: dw, scale: 1 }]);
 
         const img = new Image();
         img.onload = () => {
@@ -154,7 +161,7 @@ function WebInlineCanvas({ navigation }) {
           const nx = (c.clientWidth - dw) / 2;
           const ny = Math.max(12, c.clientHeight * 0.06);
           ctx.drawImage(img, nx, ny, dw, h);
-          syncElements((prev) => prev.map((el) => el.id === id ? { ...el, x: nx, y: ny, baseSize: dw } : el));
+          syncElements((prev) => prev.map((el) => el.id === id ? { ...el, x: nx, y: ny, baseWidth: dw, baseHeight: h, baseSize: dw } : el));
         };
         img.src = src;
       };
@@ -226,71 +233,71 @@ function WebInlineCanvas({ navigation }) {
 
   function addPictureClick() { if (fileInputRef.current) fileInputRef.current.click(); }
 
+  const getCanvasDims = () => {
+    const cw = canvasSize.w || (canvasRef.current ? canvasRef.current.clientWidth : 0) || 320;
+    const ch = canvasSize.h || (canvasRef.current ? canvasRef.current.clientHeight : 0) || 320;
+    return { cw, ch };
+  };
+
   function addEmojiToCanvas(emoji) {
-    const off = document.createElement('canvas');
-    const size = 120;
-    off.width = size; off.height = size;
-    const c = off.getContext('2d');
-    c.fillStyle = 'transparent'; c.fillRect(0,0,size,size);
-    c.font = '72px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(emoji, size/2, size/2);
-    const src = off.toDataURL('image/png');
-
     const id = Date.now().toString();
-    const cw = canvasSize.w || (canvasRef.current ? canvasRef.current.clientWidth : 0);
-    const ch = canvasSize.h || (canvasRef.current ? canvasRef.current.clientHeight : 0);
-    const dw = Math.min(120, cw * 0.25 || 120);
-    const x = (cw - dw) / 2;
-    const y = Math.max(12, (ch || 0) * 0.06);
-    syncElements([...elementsRef.current, { id, type: 'emoji', value: emoji, src, x, y, baseSize: dw, scale: 1 }]);
-
-    const img = new Image();
-    img.onload = () => {
-      const main = canvasRef.current; const ctx = ctxRef.current;
-      if (!main || !ctx) return;
-      ctx.drawImage(img, x, y, dw, dw);
-    };
-    img.src = src;
+    const { cw, ch } = getCanvasDims();
+    const dw = Math.min(120, cw * 0.25, ch * 0.25);
+    const x = Math.max(12, (cw - dw) / 2);
+    const y = Math.max(12, ch * 0.06);
+    // Als Text rendern, um Font/Emoji-Probleme mancher Browser zu vermeiden.
+    syncElements([...elementsRef.current, { id, type: 'emoji', value: emoji, src: null, x, y, baseWidth: dw, baseHeight: dw, baseSize: dw, scale: 1 }]);
   }
 
   function addIconToCanvas(sym) {
-    const off = document.createElement('canvas');
-    const size = 120;
-    off.width = size; off.height = size;
-    const c = off.getContext('2d');
-    c.fillStyle = 'transparent'; c.fillRect(0,0,size,size);
-    c.font = '72px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(sym, size/2, size/2);
-    const src = off.toDataURL('image/png');
-
     const id = Date.now().toString();
-    const cw = canvasSize.w || (canvasRef.current ? canvasRef.current.clientWidth : 0);
-    const ch = canvasSize.h || (canvasRef.current ? canvasRef.current.clientHeight : 0);
-    const dw = Math.min(120, cw * 0.25 || 120);
-    const x = (cw - dw) / 2;
-    const y = Math.max(12, (ch || 0) * 0.06);
-    syncElements([...elementsRef.current, { id, type: 'icon', value: sym, src, x, y, baseSize: dw, scale: 1 }]);
-
-    const img = new Image();
-    img.onload = () => {
-      const main = canvasRef.current; const ctx = ctxRef.current;
-      if (!main || !ctx) return;
-      ctx.drawImage(img, x, y, dw, dw);
-    };
-    img.src = src;
+    const { cw, ch } = getCanvasDims();
+    const dw = Math.min(120, cw * 0.25, ch * 0.25);
+    const x = Math.max(12, (cw - dw) / 2);
+    const y = Math.max(12, ch * 0.06);
+    // Als Text rendern, um ein konsistentes Aussehen ohne dataURL-Laden sicherzustellen.
+    syncElements([...elementsRef.current, { id, type: 'icon', value: sym, src: null, x, y, baseWidth: dw, baseHeight: dw, baseSize: dw, scale: 1 }]);
   }
 
   const selectPalette = ['#1abc4b', '#c31919', '#fa6868', '#c6d8ff', '#a8e6cf', '#000000'];
 
+  const getElementSize = (el) => {
+    const scale = el.scale || 1;
+    const baseW = el.baseWidth || el.baseSize || 48;
+    const baseH = el.baseHeight || el.baseSize || 48;
+    return { w: baseW * scale, h: baseH * scale };
+  };
+
+  const hitTest = (x, y) => {
+    // oberstes Element unter dem Zeiger anhand der echten Breite/Höhe finden
+    for (let i = canvasElements.length - 1; i >= 0; i -= 1) {
+      const el = canvasElements[i];
+      const { w, h } = getElementSize(el);
+      if (x >= el.x && x <= el.x + w && y >= el.y && y <= el.y + h) {
+        return el;
+      }
+    }
+    return null;
+  };
+
+  const clampScaleToCanvas = (el, proposed) => {
+    const baseW = el.baseWidth || el.baseSize || 48;
+    const baseH = el.baseHeight || el.baseSize || 48;
+    const wCap = canvasSize.w ? (canvasSize.w - el.x) / Math.max(baseW, 1) : Infinity;
+    const hCap = canvasSize.h ? (canvasSize.h - el.y) / Math.max(baseH, 1) : Infinity;
+    const maxScale = Math.max(0.3, Math.min(wCap, hCap));
+    return Math.max(0.3, Math.min(proposed, maxScale));
+  };
+
   return (
-    <View style={{ flex: 1, padding: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8, paddingRight: 12 }}>
-          <Text style={{ fontSize: 20 }}>←</Text>
+    <Animated.View style={[{ flex: 1, paddingHorizontal: 12 }, entryStyle]}>
+      <View style={styles.headerBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
-        <Text style={{ fontSize: 22, fontWeight: '600', color: '#374151' }}>Draw</Text>
+        <Text style={styles.headerTitle}>Draw</Text>
+        <View style={styles.headerSpacer} />
       </View>
-      <Text style={{ textAlign: 'center', fontSize: 18, color: '#374151', marginBottom: 8 }}>Draw</Text>
 
       <View style={{ flex: 1 }}>
         <View
@@ -298,22 +305,32 @@ function WebInlineCanvas({ navigation }) {
           onLayout={(e) => setCanvasSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
           style={{ flex: 1, position: 'relative', marginBottom: 12, pointerEvents: 'box-none', overflow: 'hidden', backgroundColor: '#fff' }}
         >
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: tool === 'select' ? 'auto' : 'none', zIndex: 5 }}>
+          <View
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: tool === 'select' ? 'auto' : 'none', zIndex: 5 }}
+            onStartShouldSetResponder={() => false}
+            onMoveShouldSetResponder={() => false}
+          >
             {canvasElements.map((el) => {
-              const size = (el.baseSize || 48) * (el.scale || 1);
-              const fontSize = size;
+              const { w: elW, h: elH } = getElementSize(el);
+              const fontSize = elW;
               const isSelect = tool === 'select';
               const content = el.value || '';
               const source = el.src;
+              const canSelect = tool === 'select';
               return (
                 <View
                   key={el.id}
-                  style={{ position: 'absolute', left: el.x, top: el.y }}
+                  style={{ position: 'absolute', left: el.x, top: el.y, cursor: canSelect ? 'grab' : 'default', zIndex: selectedId === el.id ? 8 : 1 }}
                   pointerEvents={isSelect ? 'auto' : 'none'}
+                  collapsable={false}
                   onStartShouldSetResponder={() => isSelect}
+                  onMoveShouldSetResponder={() => isSelect}
+                  onStartShouldSetResponderCapture={() => isSelect}
+                  onMoveShouldSetResponderCapture={() => isSelect}
                   onResponderGrant={(evt) => {
                     const { pageX, pageY } = evt.nativeEvent;
                     dragRef.current = { activeId: el.id, originX: el.x, originY: el.y, startX: pageX, startY: pageY };
+                    setSelectedId(el.id);
 
                     const now = Date.now();
                     const last = lastTapRef.current[el.id] || 0;
@@ -330,16 +347,52 @@ function WebInlineCanvas({ navigation }) {
                     const dy = pageY - dragRef.current.startY;
                     const newX = dragRef.current.originX + dx;
                     const newY = dragRef.current.originY + dy;
-                    const clamped = clampPos(newX, newY, size);
+                    const clamped = clampPos(newX, newY, elW, elH);
                     syncElements(elementsRef.current.map((it) => it.id === el.id ? { ...it, x: clamped.x, y: clamped.y } : it));
                   }}
                   onResponderRelease={() => { dragRef.current = { activeId: null, originX: 0, originY: 0, startX: 0, startY: 0 }; }}
                   onResponderTerminate={() => { dragRef.current = { activeId: null, originX: 0, originY: 0, startX: 0, startY: 0 }; }}
                 >
                   {source ? (
-                    <img src={source} style={{ width: size, height: size, objectFit: 'contain' }} alt="" />
+                    <img
+                      src={source}
+                      style={{ width: elW, height: elH, objectFit: 'contain', pointerEvents: 'none', cursor: canSelect ? 'grab' : 'default' }}
+                      alt=""
+                      onError={() => {
+                        syncElements(elementsRef.current.map((it) => it.id === el.id ? { ...it, src: null } : it));
+                      }}
+                    />
                   ) : (
-                    <Text style={{ fontSize, transform: [{ scale: el.scale || 1 }] }}>{content}</Text>
+                    <Text style={{ fontSize, transform: [{ scale: el.scale || 1 }], pointerEvents: 'none', userSelect: 'none' }}>{content}</Text>
+                  )}
+
+                  {selectedId === el.id && isSelect && (
+                    <View pointerEvents="box-none" style={[styles.selectionBox, { width: elW, height: elH }] }>
+                      <View
+                        style={[styles.selectionHandle, { cursor: 'nwse-resize', touchAction: 'none' }]}
+                        pointerEvents="auto"
+                        onStartShouldSetResponder={() => true}
+                        onMoveShouldSetResponder={() => true}
+                        onStartShouldSetResponderCapture={() => true}
+                        onMoveShouldSetResponderCapture={() => true}
+                        onResponderTerminationRequest={() => false}
+                        onResponderGrant={(evt) => {
+                          scaleDragRef.current = { activeId: el.id, startScale: el.scale || 1, startX: evt.nativeEvent.pageX };
+                          if (evt.preventDefault) evt.preventDefault();
+                        }}
+                        onResponderMove={(evt) => {
+                          if (scaleDragRef.current.activeId !== el.id) return;
+                          if (evt.preventDefault) evt.preventDefault();
+                          const dx = evt.nativeEvent.pageX - scaleDragRef.current.startX;
+                          const factor = 1 + dx / 140;
+                          const proposed = (scaleDragRef.current.startScale || 1) * factor;
+                          const bounded = clampScaleToCanvas(el, proposed);
+                          syncElements(elementsRef.current.map((it) => it.id === el.id ? { ...it, scale: bounded } : it));
+                        }}
+                        onResponderRelease={() => { scaleDragRef.current = { activeId: null, startScale: 1, startX: 0 }; }}
+                        onResponderTerminate={() => { scaleDragRef.current = { activeId: null, startScale: 1, startX: 0 }; }}
+                      />
+                    </View>
                   )}
                 </View>
               );
@@ -351,9 +404,15 @@ function WebInlineCanvas({ navigation }) {
           <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
             <View style={styles.toolbar}>
               <View style={styles.toolbarRow}>
-                {[{key:'pen', icon:'pencil', label:'Pen'},{key:'eraser', icon:'ios-eraser', label:'Eraser'},{key:'select', icon:'hand-left', label:'Select'}].map((t) => (
+                {[{key:'pen', icon:'pencil', label:'Pen', lib:'ion'}, {key:'eraser', icon:'eraser', label:'Eraser', lib:'mci'}, {key:'select', icon:'hand-pointer', label:'Select', lib:'fa5'}].map((t) => (
                   <TouchableOpacity key={t.key} onPress={() => { updateTool(t.key); }} style={[styles.toolButton, tool===t.key && styles.toolButtonActive]}>
-                    <Ionicons name={t.icon} size={18} color={tool===t.key ? '#111' : '#374151'} />
+                    {t.lib === 'mci' ? (
+                      <MaterialCommunityIcons name={t.icon} size={18} color={tool===t.key ? '#111' : '#374151'} />
+                    ) : t.lib === 'fa5' ? (
+                      <FontAwesome5 name={t.icon} size={18} solid color={tool===t.key ? '#111' : '#374151'} />
+                    ) : (
+                      <Ionicons name={t.icon} size={18} color={tool===t.key ? '#111' : '#374151'} />
+                    )}
                     <Text style={[styles.toolButtonText, tool===t.key && styles.toolButtonTextActive]}>{t.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -406,9 +465,9 @@ function WebInlineCanvas({ navigation }) {
                   </View>
                   <View style={styles.sliderMeta}>
                     <Text style={styles.sliderValue}>{penSize}px</Text>
-                    <View style={{ flexDirection: 'row', marginLeft: 8 }}>
+                    <View style={{ flexDirection: 'row', marginLeft: 6 }}>
                       {[4,8,12,18,24].map((s) => (
-                        <TouchableOpacity key={s} onPress={() => { updateSize(s); updateTool('pen'); }} style={[styles.sizeDot, penSize === s ? styles.sizeActive : null, { marginRight: 6 }]}>
+                        <TouchableOpacity key={s} onPress={() => { updateSize(s); updateTool('pen'); }} style={[styles.sizeDot, penSize === s ? styles.sizeActive : null, { marginRight: 4 }]}>
                           <Text style={{ color: '#fff', fontSize: 10, textAlign: 'center' }}>{s}</Text>
                         </TouchableOpacity>
                       ))}
@@ -425,37 +484,46 @@ function WebInlineCanvas({ navigation }) {
               </View>
             </View>
 
-            <View style={{ borderWidth: 1, borderColor: '#e5e7eb', padding: 12, minHeight: 140 }}>
-              <Text style={{ marginBottom: 8, color: '#6b7280' }}>Assets (click to add to canvas)</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {['🙂', '🎉', '🏆', '🧶', '⭐'].map((em) => (
-                  <TouchableOpacity key={em} onPress={() => addEmojiToCanvas(em)} style={styles.assetThumb}><Text style={{ fontSize: 28 }}>{em}</Text></TouchableOpacity>
-                ))}
-              </View>
-            </View>
           </ScrollView>
         </View>
       </View>
 
       {showPalette && (
         <View style={styles.overlay}>
-          <View style={styles.paletteCard}>
+          <View style={[styles.paletteCard, { maxHeight: '82%' }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <Text style={{ fontWeight: '600', fontSize: 16 }}>Icons & Emojis</Text>
               <TouchableOpacity onPress={() => setShowPalette(false)}><Text style={{ fontSize: 16 }}>✕</Text></TouchableOpacity>
             </View>
             <Text style={{ color: '#6b7280', marginBottom: 8 }}>Tap to add to canvas</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {['✅','❌','⭐','❤️','🔥','🎯','📌','⬜️','⬛️','🔺','🔻','🔵','🟢','🟡','🟣','🔶'].map(sym => (
-                <TouchableOpacity key={sym} onPress={() => { addIconToCanvas(sym); setShowPalette(false); }} style={styles.assetThumb}>
-                  <Text style={{ fontSize: 24 }}>{sym}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {[
+                  '✅','❌','⭐','🌟','✨','❤️','🧡','💛','💚','💙','💜','🖤',
+                  '🔥','🎯','📌','📍','📎','✏️','🖌️','🖍️','✂️','📐','📏',
+                  '⬜️','⬛️','◻️','◼️','⚪️','⚫️','🔵','🟢','🟡','🟣','🟤','🟥','🟧','🟨','🟩','🟦','🟪','⬆️','⬇️','⬅️','➡️',
+                  '🔺','🔻','🔸','🔶','🔷','🔹','🔺','🔻','🔼','🔽',
+                  '✔️','➕','➖','✖️','➗','〰️','➰'
+                ].map(sym => (
+                  <TouchableOpacity
+                    key={sym}
+                    onPressIn={() => {
+                      addIconToCanvas(sym);
+                      updateTool('select');
+                      requestAnimationFrame(() => setShowPalette(false));
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.assetThumb}
+                  >
+                    <Text style={{ fontSize: 24 }}>{sym}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -480,15 +548,17 @@ const styles = StyleSheet.create({
   toolBtn: { padding: 8, borderRadius: 6, backgroundColor: '#f3f4f6', marginRight: 8 },
   toolActive: { backgroundColor: '#fde68a' },
   doneBtn: { padding: 10, borderRadius: 6, backgroundColor: '#4B5563', marginLeft: 6 },
-  assetThumb: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' },
-  sizeDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#111', marginRight: 8, alignItems:'center', justifyContent:'center' },
-  sizeActive: { borderWidth: 3, borderColor: '#4B5563' },
+  assetThumb: { width: '25%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#ddd' },
+  sizeDot: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#111', marginRight: 4, alignItems:'center', justifyContent:'center' },
+  sizeActive: { borderWidth: 2, borderColor: '#4B5563' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
   paletteCard: { width: '90%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   colorDot: { width: 28, height: 28, borderRadius: 14, marginRight: 8 },
   colorActive: { borderWidth: 3, borderColor: '#4B5563' },
-  sliderTrack: { height: 14, borderRadius: 7, backgroundColor: '#111', justifyContent: 'center', marginTop: 6 },
-  sliderThumb: { position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', borderWidth: 2, borderColor: '#000', marginTop: -7 },
+  selectionBox: { position: 'absolute', borderWidth: 1.5, borderColor: '#3B82F6', top: 0, left: 0, right: 0, bottom: 0 },
+  selectionHandle: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: '#3B82F6', bottom: -10, right: -10, borderWidth: 2, borderColor: '#fff' },
+  sliderTrack: { height: 10, borderRadius: 5, backgroundColor: '#111', justifyContent: 'center', marginTop: 4 },
+  sliderThumb: { position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', borderWidth: 2, borderColor: '#000', marginTop: -6 },
   toolbar: { marginTop: 12, borderTopWidth: 1, borderColor: '#e5e7eb', paddingTop: 10 },
   toolbarRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 10, gap: 8 },
   toolButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#f3f4f6' },
@@ -504,6 +574,20 @@ const styles = StyleSheet.create({
   segmentText: { color: '#374151', fontWeight: '600' },
   segmentTextActive: { color: '#fff' },
   colorsRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 8 },
-  sliderMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 6, justifyContent: 'space-between' },
-  sliderValue: { color: '#111', fontWeight: '700' },
+  sliderMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, justifyContent: 'space-between' },
+  sliderValue: { color: '#111', fontWeight: '700', fontSize: 12 },
+  headerBar: {
+    paddingHorizontal: 4,
+    paddingTop: 10,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+  backButton: { padding: 8 },
+  headerSpacer: { width: 32 },
 });

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
 import { Trash2, Heart, Download, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { fileResults } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
+import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function FileDetailRN({ navigation, route }) {
+  const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const startIndex = route?.params?.index ?? 0;
   const [index, setIndex] = useState(startIndex);
   const [liked, setLiked] = useState(false);
@@ -30,40 +32,42 @@ export default function FileDetailRN({ navigation, route }) {
         <View style={{ width: 44 }} />
       </View>
 
-      <View style={styles.previewBox}>
-        {renderBadge()}
-        <Text style={styles.fileName}>{file.label}</Text>
-      </View>
+      <Animated.View style={[styles.contentArea, entryStyle]}>
+        <View style={styles.previewBox}>
+          {renderBadge()}
+          <Text style={styles.fileName}>{file.label}</Text>
+        </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => {}} style={styles.iconBtn}><Trash2 size={26} color={palette.foreground} /></TouchableOpacity>
-        <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.iconBtn}>
-          <Heart size={26} color={liked ? '#ef4444' : palette.foreground} fill={liked ? '#ef4444' : 'none'} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('ProjectLibraryRN', { saveMode: true })} style={styles.iconBtn}>
-          <Download size={26} color={palette.foreground} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.actions}>
+          <TouchableOpacity onPress={() => {}} style={styles.iconBtn}><Trash2 size={26} color={palette.foreground} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.iconBtn}>
+            <Heart size={26} color={liked ? '#ef4444' : palette.foreground} fill={liked ? '#ef4444' : 'none'} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('ProjectLibraryRN', { saveMode: true })} style={styles.iconBtn}>
+            <Download size={26} color={palette.foreground} />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.descriptionBox}>
-        <Text style={styles.descriptionText}>{file.description}</Text>
-      </View>
+        <View style={styles.descriptionBox}>
+          <Text style={styles.descriptionText}>{file.description}</Text>
+        </View>
 
-      <View style={styles.navRow}>
-        {index > 0 ? (
-          <Button variant="secondary" size="icon" onPress={() => setIndex((i) => i - 1)}>
-            <ChevronLeft size={20} color={palette.foreground} />
-          </Button>
-        ) : <View style={{ width: 44 }} />}
+        <View style={styles.navRow}>
+          {index > 0 ? (
+            <Button variant="secondary" size="icon" onPress={() => setIndex((i) => i - 1)}>
+              <ChevronLeft size={20} color={palette.foreground} />
+            </Button>
+          ) : <View style={{ width: 44 }} />}
 
-        <Text style={styles.counter}>{index + 1} / {fileResults.length}</Text>
+          <Text style={styles.counter}>{index + 1} / {fileResults.length}</Text>
 
-        {index < fileResults.length - 1 ? (
-          <Button variant="secondary" size="icon" onPress={() => setIndex((i) => i + 1)}>
-            <ChevronRight size={20} color={palette.foreground} />
-          </Button>
-        ) : <View style={{ width: 44 }} />}
-      </View>
+          {index < fileResults.length - 1 ? (
+            <Button variant="secondary" size="icon" onPress={() => setIndex((i) => i + 1)}>
+              <ChevronRight size={20} color={palette.foreground} />
+            </Button>
+          ) : <View style={{ width: 44 }} />}
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -78,6 +82,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: { fontSize: 18, fontWeight: '600', color: palette.foreground },
+  contentArea: { flex: 1 },
   previewBox: {
     alignItems: 'center',
     justifyContent: 'center',
