@@ -1,4 +1,3 @@
-// src/screens/WelcomeScreen.js
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

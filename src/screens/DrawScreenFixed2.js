@@ -133,7 +133,7 @@ function WebInlineCanvas({ navigation }) {
 
     resize();
     window.addEventListener('resize', resize);
-    // initialer Bereitschaftszustand
+    // Canvas initial bereit machen, bevor Events registriert werden
 
     const inp = document.createElement('input');
     inp.type = 'file';
