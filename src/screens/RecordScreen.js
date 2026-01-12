@@ -138,11 +138,11 @@ export default function RecordScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 18 },
+  container: { flex: 1, backgroundColor: '#fff' },
   headerBar: {
-    paddingHorizontal: 4,
-    paddingTop: 6,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#e5e7eb',
   },
-  backButton: { padding: 8 },
+  backButton: { padding: 6 },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
   headerSpacer: { width: 32 },
   centerArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },

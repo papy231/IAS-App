@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Moda
 import { Menu, Search, Folder, FolderPlus, Trash2, ArrowLeft } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getLibraryState, setLibraryFolders, setLibraryFilesByFolder } from '../data/libraryStore';
+import { setHasSearched } from '../data/searchState';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
@@ -138,7 +139,14 @@ export default function ProjectLibraryRN({ navigation, route }) {
         <View style={styles.overlay} pointerEvents="box-none">
           <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
           <View style={styles.menuPanel}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setHasSearched(false);
+                setMenuOpen(false);
+                navigation.navigate('Welcome');
+              }}
+            >
               <Text style={styles.menuItemText}>New Search</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('ProjectLibraryRN'); }}>

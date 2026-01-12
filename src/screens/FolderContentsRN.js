@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Menu, Search, FolderOpen, ArrowLeft, Image as ImageIcon, FileVideo, FileText } from 'lucide-react-native';
+import { FolderOpen, Image as ImageIcon, FileVideo, FileText } from 'lucide-react-native';
 import { getLibraryState, setLibraryFilesByFolder } from '../data/libraryStore';
 import { palette } from '../theme/colors';
-import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 import { playTrashFeedback } from '../utils/feedback';
 
@@ -57,15 +56,11 @@ export default function FolderContentsRN({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color={palette.foreground} />
-        </Button>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={22} color={palette.foreground} />
+        </TouchableOpacity>
         <Text style={styles.title}>{folderName}</Text>
-        <View style={styles.headerActions}>
-          <Menu size={20} color={palette.foreground} />
-          <View style={{ width: 12 }} />
-          <Search size={20} color={palette.foreground} />
-        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
       <Animated.View style={[styles.contentArea, entryStyle]}>
@@ -95,10 +90,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
+  backButton: { padding: 6 },
   title: { fontSize: 18, fontWeight: '700', color: palette.foreground },
-  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  headerSpacer: { width: 32 },
   contentArea: { flex: 1 },
   list: { paddingHorizontal: 12, paddingBottom: 24 },
   card: {

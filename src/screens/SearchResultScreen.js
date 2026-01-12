@@ -25,13 +25,11 @@ export default function SearchResultScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <Animated.ScrollView style={[styles.screenPadding, entryStyle]}>
         <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#4B5563" />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color="#4B5563" />
           </TouchableOpacity>
           <Text style={styles.title}>Search Results</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {results.map((result) => (
@@ -73,17 +71,19 @@ const styles = StyleSheet.create({
   },
   screenPadding: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 0,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    paddingBottom: 14,
     marginBottom: 24,
   },
-  backButton: {
-    marginRight: 12,
-  },
+  backButton: { padding: 6 },
+  headerSpacer: { width: 32 },
   title: {
     fontSize: 24,
     fontWeight: '600',

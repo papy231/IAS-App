@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
 import { Trash2, Heart, Download, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { fileResults } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
@@ -25,11 +26,11 @@ export default function FileDetailRN({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
-          <ChevronLeft size={22} color={palette.foreground} />
-        </Button>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={22} color={palette.foreground} />
+        </TouchableOpacity>
         <Text style={styles.title}>{file.label}</Text>
-        <View style={{ width: 44 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <Animated.View style={[styles.contentArea, entryStyle]}>
@@ -78,9 +79,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
+  backButton: { padding: 6 },
+  headerSpacer: { width: 32 },
   title: { fontSize: 18, fontWeight: '600', color: palette.foreground },
   contentArea: { flex: 1 },
   previewBox: {

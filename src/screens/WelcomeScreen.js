@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { setHasSearched } from '../data/searchState';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
@@ -82,6 +83,9 @@ export default function WelcomeScreen({ navigation }) {
 
   const handleNav = (screen) => {
     setMenuOpen(false);
+    if (screen === 'Welcome') {
+      setHasSearched(false);
+    }
     if (screen) navigation.navigate(screen);
   };
 

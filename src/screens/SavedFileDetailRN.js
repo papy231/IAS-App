@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
-import { ArrowLeft, Share2, Trash2 } from 'lucide-react-native';
+import { Share2, Trash2 } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
@@ -40,14 +41,14 @@ export default function SavedFileDetailRN({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.contentArea, entryStyle]}>
         <View style={styles.header}>
-          <Button variant="ghost" size="icon" onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color={palette.foreground} />
-          </Button>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color={palette.foreground} />
+          </TouchableOpacity>
           <View>
             <Text style={styles.title}>{folderName}</Text>
             <Text style={styles.subtitle}>{file.label || file.name}</Text>
           </View>
-          <View style={{ width: 44 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
         <View style={styles.preview}>
@@ -68,7 +69,7 @@ export default function SavedFileDetailRN({ navigation, route }) {
 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.goBack()}>
-            <ArrowLeft size={20} color={'#fff'} />
+            <Ionicons name="arrow-back" size={20} color={'#fff'} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomBtnLight}>
             <Share2 size={18} color={palette.foreground} />
@@ -81,7 +82,15 @@ export default function SavedFileDetailRN({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4ff', paddingHorizontal: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    paddingBottom: 14,
+  },
+  backButton: { padding: 6 },
+  headerSpacer: { width: 32 },
   title: { fontSize: 16, fontWeight: '700', color: palette.foreground },
   subtitle: { fontSize: 12, color: '#6b7280' },
   preview: {

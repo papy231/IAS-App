@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 import { playTrashFeedback } from '../utils/feedback';
+import { setHasSearched } from '../data/searchState';
 
 let BlurViewComponent = View;
 try {
@@ -90,7 +91,14 @@ export default function InputOverviewScreen({ navigation, route }) {
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
               <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setHasSearched(false);
+                    setMenuOpen(false);
+                    navigation.navigate('Welcome');
+                  }}
+                >
                   <Text style={styles.menuItemText}>New Search</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('ProjectLibraryRN'); }}>

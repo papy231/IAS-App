@@ -85,8 +85,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   backButton: {
-    marginTop: 40,
-    marginBottom: 20,
+    position: 'absolute',
+    top: 10,
+    left: 16,
+    padding: 6,
   },
   iconContainer: {
     width: 100,

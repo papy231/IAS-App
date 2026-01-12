@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { setHasSearched } from '../data/searchState';
 
 let BlurViewComponent = View;
 try {
@@ -92,7 +93,13 @@ export default function QuickModifyScreen({ navigation, route }) {
               />
             </View>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('SearchLoading')}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => {
+                setHasSearched(true);
+                navigation.navigate('SearchLoading');
+              }}
+            >
               <Text style={styles.primaryButtonText}>Start Searching</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -103,7 +110,14 @@ export default function QuickModifyScreen({ navigation, route }) {
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
               <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setHasSearched(false);
+                    setMenuOpen(false);
+                    navigation.navigate('Welcome');
+                  }}
+                >
                   <Text style={styles.menuItemText}>New Search</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('ProjectLibraryRN'); }}>

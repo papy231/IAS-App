@@ -579,9 +579,9 @@ const styles = StyleSheet.create({
   sliderMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, justifyContent: 'space-between' },
   sliderValue: { color: '#111', fontWeight: '700', fontSize: 12 },
   headerBar: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 12,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -590,6 +590,6 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  backButton: { padding: 8 },
+  backButton: { padding: 6 },
   headerSpacer: { width: 32 },
 });

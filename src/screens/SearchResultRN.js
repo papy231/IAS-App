@@ -5,6 +5,7 @@ import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-nati
 import { fileResults } from '../data/libraryData';
 import { palette } from '../theme/colors';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { getHasSearched, setHasSearched } from '../data/searchState';
 
 let BlurViewComponent = View;
 try {
@@ -26,6 +27,7 @@ const iconMap = {
 export default function SearchResultRN({ navigation }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [menuOpen, setMenuOpen] = useState(false);
+  const hasSearched = getHasSearched();
 
   const renderItem = ({ item, index }) => {
     const IconComp = iconMap[item.type] || File;
@@ -50,20 +52,35 @@ export default function SearchResultRN({ navigation }) {
       </View>
 
       <Animated.View style={[styles.mainArea, entryStyle]}>
-        <FlatList
-          data={fileResults}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={3}
-          contentContainerStyle={styles.list}
-        />
+        {hasSearched ? (
+          <FlatList
+            data={fileResults}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            contentContainerStyle={styles.list}
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              Results are shown after initially starting the search. Please go to Quick Modify
+            </Text>
+          </View>
+        )}
 
         {menuOpen && (
           <View style={styles.overlay} pointerEvents="box-none">
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
               <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('Welcome'); }}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setHasSearched(false);
+                    setMenuOpen(false);
+                    navigation.navigate('Welcome');
+                  }}
+                >
                   <Text style={styles.menuItemText}>New Search</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); navigation.navigate('ProjectLibraryRN'); }}>
@@ -135,6 +152,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   type: { fontSize: 12, fontWeight: '700', color: palette.foreground, marginTop: 6 },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
