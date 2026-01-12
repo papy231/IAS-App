@@ -2,40 +2,89 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Modal, FlatList, Animated } from 'react-native';
 import { Menu, Search, Folder, FolderPlus, Trash2, ArrowLeft } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { folders as defaultFolders, folderFiles as defaultFolderFiles } from '../data/libraryData';
+import { getLibraryState, setLibraryFolders, setLibraryFilesByFolder } from '../data/libraryStore';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTrashFeedback } from '../utils/feedback';
 
 export default function ProjectLibraryRN({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const saveMode = route?.params?.saveMode || false;
-  const [folders, setFolders] = useState(defaultFolders);
-  const [filesByFolder, setFilesByFolder] = useState(defaultFolderFiles);
+  const fileToSave = route?.params?.fileToSave || null;
+  const [folders, setFolders] = useState(() => getLibraryState().folders);
+  const [filesByFolder, setFilesByFolder] = useState(() => getLibraryState().filesByFolder);
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const normalizeSavedFile = (file) => {
+    if (!file) return null;
+    const sourceId = file.sourceId ?? file.id ?? Date.now() + Math.random();
+    const rawType = (file.type || '').toString().toLowerCase();
+    const displayType = rawType === 'mp4'
+      ? 'MP4'
+      : rawType === 'xlsx'
+        ? 'XLSX'
+        : rawType === 'jpg' || rawType === 'png'
+          ? 'Image'
+          : rawType === 'pdf'
+            ? 'PDF'
+            : rawType === 'doc'
+              ? 'DOC'
+              : (file.type || 'FILE').toString().toUpperCase();
+    return { ...file, sourceId, type: displayType, isNew: true, savedAt: Date.now() };
+  };
+
+  const handleFolderPress = (folder) => {
+    if (saveMode && fileToSave) {
+      const normalized = normalizeSavedFile(fileToSave);
+      if (!normalized) return;
+      const existing = filesByFolder[folder.id] || [];
+      const savedFile = { ...normalized, id: Date.now() + Math.random() };
+      const updated = { ...filesByFolder, [folder.id]: [...existing, savedFile] };
+      setFilesByFolder(updated);
+      setLibraryFilesByFolder(updated);
+      navigation.navigate('FolderContentsRN', { folderId: folder.id, folderName: folder.name });
+      return;
+    }
+    navigation.navigate('FolderContentsRN', { folderId: folder.id, folderName: folder.name });
+  };
+
   const addFolder = () => {
     if (!name.trim()) return;
     const newFolder = { id: Date.now(), name: name.trim(), color: '#cbd5e1' };
-    setFolders((prev) => [...prev, newFolder]);
-    setFilesByFolder((prev) => ({ ...prev, [newFolder.id]: [] }));
+    setFolders((prev) => {
+      const next = [...prev, newFolder];
+      setLibraryFolders(next);
+      return next;
+    });
+    setFilesByFolder((prev) => {
+      const next = { ...prev, [newFolder.id]: [] };
+      setLibraryFilesByFolder(next);
+      return next;
+    });
     setName('');
     setShowCreate(false);
   };
 
   const deleteFolder = (id) => {
-    setFolders((prev) => prev.filter((f) => f.id !== id));
+    playTrashFeedback();
+    setFolders((prev) => {
+      const next = prev.filter((f) => f.id !== id);
+      setLibraryFolders(next);
+      return next;
+    });
     const copy = { ...filesByFolder };
     delete copy[id];
     setFilesByFolder(copy);
+    setLibraryFilesByFolder(copy);
   };
 
   const renderItem = ({ item }) => {
     const count = filesByFolder[item.id]?.length || 0;
     return (
-      <TouchableOpacity style={styles.folderCard} onPress={() => navigation.navigate('FolderContentsRN', { folderId: item.id, folderName: item.name })}>
+      <TouchableOpacity style={styles.folderCard} onPress={() => handleFolderPress(item)}>
         <View style={[styles.folderIconWrap, { backgroundColor: item.color || '#e5e7eb' }]}>
           <Folder size={28} color={palette.primaryText} />
         </View>

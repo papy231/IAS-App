@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Anima
 import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTrashFeedback } from '../utils/feedback';
 
 let BlurViewComponent = View;
 try {
@@ -40,6 +41,7 @@ export default function InputOverviewScreen({ navigation, route }) {
   const [files, setFiles] = useState(initialFiles);
 
   const removeItem = (id) => {
+    playTrashFeedback();
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 

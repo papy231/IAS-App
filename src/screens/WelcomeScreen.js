@@ -200,20 +200,20 @@ export default function WelcomeScreen({ navigation }) {
           <View style={styles.overlay} pointerEvents="box-none">
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={withFeedback(() => setMenuOpen(false))} />
             <BlurViewComponent style={styles.menuPanel} tint="light" intensity={30}>
-            <View style={{ gap: 12 }}>
-              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Welcome'))}>
-                <Text style={styles.menuItemText}>New Search</Text>
+              <View style={styles.menuItems}>
+                <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Welcome'))}>
+                  <Text style={styles.menuItemText}>New Search</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('ProjectLibraryRN'))}>
+                  <Text style={styles.menuItemText}>Library</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Login'))}>
+                  <Text style={styles.menuItemText}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.closeBtn} onPress={withFeedback(() => setMenuOpen(false))}>
+                <Ionicons name="close" size={18} color="#111827" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('ProjectLibraryRN'))}>
-                <Text style={styles.menuItemText}>Library</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={withFeedback(() => handleNav('Login'))}>
-                <Text style={styles.menuItemText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={withFeedback(() => setMenuOpen(false))}>
-              <Ionicons name="close" size={18} color="#111827" />
-            </TouchableOpacity>
             </BlurViewComponent>
           </View>
         )}
@@ -299,11 +299,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   closeBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 18,
+    alignSelf: 'center',
+    marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -311,6 +311,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
   },
+  menuItems: { flex: 1, justifyContent: 'flex-end', gap: 12 },
   menuItem: {
     paddingVertical: 12,
     paddingHorizontal: 14,

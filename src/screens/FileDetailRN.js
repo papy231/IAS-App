@@ -43,7 +43,7 @@ export default function FileDetailRN({ navigation, route }) {
           <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.iconBtn}>
             <Heart size={26} color={liked ? '#ef4444' : palette.foreground} fill={liked ? '#ef4444' : 'none'} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('ProjectLibraryRN', { saveMode: true })} style={styles.iconBtn}>
+          <TouchableOpacity onPress={() => navigation.navigate('ProjectLibraryRN', { saveMode: true, fileToSave: file })} style={styles.iconBtn}>
             <Download size={26} color={palette.foreground} />
           </TouchableOpacity>
         </View>

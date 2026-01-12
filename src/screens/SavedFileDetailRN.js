@@ -4,11 +4,27 @@ import { ArrowLeft, Share2, Trash2 } from 'lucide-react-native';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { getLibraryState, setLibraryFilesByFolder } from '../data/libraryStore';
+import { playTrashFeedback } from '../utils/feedback';
 
 export default function SavedFileDetailRN({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 14 });
   const file = route?.params?.file;
   const folderName = route?.params?.folderName || 'Folder';
+  const folderId = route?.params?.folderId;
+
+  const handleDelete = () => {
+    playTrashFeedback();
+    if (folderId == null || !file?.id) {
+      navigation.goBack();
+      return;
+    }
+    const filesByFolder = getLibraryState().filesByFolder;
+    const updatedFolderFiles = (filesByFolder[folderId] || []).filter((entry) => entry.id !== file.id);
+    const nextFilesByFolder = { ...filesByFolder, [folderId]: updatedFolderFiles };
+    setLibraryFilesByFolder(nextFilesByFolder);
+    navigation.goBack();
+  };
 
   if (!file) {
     return (
@@ -40,7 +56,7 @@ export default function SavedFileDetailRN({ navigation, route }) {
 
         <View style={styles.actions}>
           <Button variant="secondary" style={{ flex: 1 }}>Modify</Button>
-          <Button variant="destructive" style={{ flex: 1, marginLeft: 10 }} onPress={() => navigation.goBack()}>
+          <Button variant="destructive" style={{ flex: 1, marginLeft: 10 }} onPress={handleDelete}>
             Delete
           </Button>
         </View>

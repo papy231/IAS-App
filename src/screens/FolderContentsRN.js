@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Menu, Search, FolderOpen, ArrowLeft, Image as ImageIcon, FileVideo, FileText } from 'lucide-react-native';
-import { folderFiles } from '../data/libraryData';
+import { getLibraryState, setLibraryFilesByFolder } from '../data/libraryStore';
 import { palette } from '../theme/colors';
 import Button from '../components/Button';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTrashFeedback } from '../utils/feedback';
 
 const typeIcon = {
   PDF: FileText,
@@ -17,17 +19,37 @@ export default function FolderContentsRN({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const folderId = route?.params?.folderId;
   const folderName = route?.params?.folderName || 'Folder';
-  const files = folderFiles[folderId] || [];
+  const [files, setFiles] = useState(() => {
+    const filesByFolder = getLibraryState().filesByFolder;
+    return filesByFolder[folderId] || [];
+  });
+
+  useEffect(() => {
+    const filesByFolder = getLibraryState().filesByFolder;
+    setFiles(filesByFolder[folderId] || []);
+  }, [folderId]);
+
+  const handleDeleteFile = (fileId) => {
+    playTrashFeedback();
+    const filesByFolder = getLibraryState().filesByFolder;
+    const updatedFolderFiles = (filesByFolder[folderId] || []).filter((file) => file.id !== fileId);
+    const nextFilesByFolder = { ...filesByFolder, [folderId]: updatedFolderFiles };
+    setLibraryFilesByFolder(nextFilesByFolder);
+    setFiles(updatedFolderFiles);
+  };
 
   const renderItem = ({ item }) => {
     const IconComp = typeIcon[item.type] || FileText;
     return (
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('SavedFileDetailRN', { file: item, folderName })}>
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('SavedFileDetailRN', { file: item, folderName, folderId })}>
         <View style={styles.cardIcon}>
           <IconComp size={28} color={palette.foreground} />
         </View>
         <Text style={styles.cardTitle} numberOfLines={1}>{item.label || item.name}</Text>
         <Text style={styles.cardType}>{item.type}</Text>
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteFile(item.id)}>
+          <Ionicons name="trash" size={16} color="#111827" />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -87,6 +109,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
     padding: 14,
+    position: 'relative',
   },
   cardIcon: {
     width: 48,
@@ -99,6 +122,19 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 13, fontWeight: '700', color: palette.foreground },
   cardType: { fontSize: 11, color: '#6b7280', marginTop: 4 },
+  deleteBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { marginTop: 8, color: '#6b7280' },
 });
