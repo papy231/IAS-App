@@ -192,7 +192,13 @@ export default function WelcomeScreen({ navigation }) {
             <Text style={styles.fileHint}>MP4, PDF, DOC, XLSX</Text>
 
             {/* Reset button */}
-            <TouchableOpacity style={styles.resetButton} onPress={withFeedback(() => {})}>
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={withFeedback(() => {
+                setHasSearched(false);
+                setKeywords('');
+              })}
+            >
               <Text style={styles.resetButtonText}>Reset search</Text>
             </TouchableOpacity>
           </ScrollView>
