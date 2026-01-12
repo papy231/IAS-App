@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { playTapFeedback } from '../utils/feedback';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
@@ -19,7 +18,6 @@ export default function WelcomeScreen({ navigation }) {
   const { style: screenEntryStyle } = useEntryAnimation({ offset: 12, duration: 360 });
 
   const withFeedback = (fn) => (...args) => {
-    playTapFeedback();
     if (fn) fn(...args);
   };
 
@@ -177,7 +175,7 @@ export default function WelcomeScreen({ navigation }) {
                 const picker = await import('expo-document-picker');
                 const result = await picker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
                 if (result && result.type !== 'cancel') {
-                  navigation.navigate('QuickModify', { files: result });
+                  navigation.navigate('Welcome');
                 }
               } catch (e) {
                 console.warn('file-pick-error', e);

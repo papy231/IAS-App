@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTapFeedback } from '../utils/feedback';
 
 export default function RecordScreen({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
@@ -44,6 +45,7 @@ export default function RecordScreen({ navigation, route }) {
   }
 
   function validateRecording() {
+    playTapFeedback();
     setStatus('finished');
   }
 
@@ -57,13 +59,14 @@ export default function RecordScreen({ navigation, route }) {
   }
 
   function confirmAndExit() {
-    navigation.navigate('QuickModify');
+    playTapFeedback();
+    navigation.navigate('Welcome');
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Record</Text>

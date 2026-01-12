@@ -121,7 +121,7 @@ export default function ProjectLibraryRN({ navigation, route }) {
         <Button variant="ghost" size="icon">
           <Search size={20} color={palette.foreground} />
         </Button>
-        <Button variant="secondary" size="md" onPress={() => setShowCreate(true)}>New Folder</Button>
+        <Button variant="secondary" size="md" style={styles.newFolderButton} onPress={() => setShowCreate(true)}>New Folder</Button>
       </View>
 
       <Animated.View style={[styles.contentArea, entryStyle]}>
@@ -213,6 +213,10 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  newFolderButton: {
+    paddingHorizontal: 22,
+    paddingVertical: 6,
   },
   contentArea: { flex: 1 },
   list: {

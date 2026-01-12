@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, ScrollView, Animated } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTapFeedback } from '../utils/feedback';
 
 function WebInlineCanvas({ navigation }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 14 });
@@ -225,10 +226,11 @@ function WebInlineCanvas({ navigation }) {
   }, [penSize, penStyle, penColor, tool]);
 
   function exportPNG() {
+    playTapFeedback();
     if (!canvasRef.current) return;
     const data = canvasRef.current.toDataURL('image/png');
     console.log('draw-export', { data, elements: elementsRef.current });
-    navigation.navigate('QuickModify', { drawingData: data, elements: elementsRef.current });
+      navigation.navigate('Welcome', { drawingData: data, elements: elementsRef.current });
   }
 
   function addPictureClick() { if (fileInputRef.current) fileInputRef.current.click(); }
@@ -292,7 +294,7 @@ function WebInlineCanvas({ navigation }) {
   return (
     <Animated.View style={[{ flex: 1, paddingHorizontal: 12 }, entryStyle]}>
       <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Draw</Text>

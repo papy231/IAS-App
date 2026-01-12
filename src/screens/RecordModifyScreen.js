@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
+import { playTapFeedback } from '../utils/feedback';
 
 export default function QuickModifyScreen({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
@@ -180,7 +181,13 @@ export default function QuickModifyScreen({ navigation, route }) {
         </View>
 
         <View style={{ marginTop: 12 }}>
-          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#22c55e' }]} onPress={() => navigation.navigate('Record', { status: 'finished' })}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#22c55e' }]}
+              onPress={() => {
+                playTapFeedback();
+                navigation.navigate('Record', { status: 'finished' });
+              }}
+            >
             <Text style={styles.primaryButtonText}>Save</Text>
           </TouchableOpacity>
         </View>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { palette } from '../theme/colors';
-import { playTapFeedback } from '../utils/feedback';
 
 const variantStyles = {
   default: {
@@ -52,7 +51,6 @@ export default function Button({
   const s = sizeStyles[size] || sizeStyles.md;
   const handlePress = React.useCallback(
     (event) => {
-      playTapFeedback();
       if (onPress) {
         onPress(event);
       }

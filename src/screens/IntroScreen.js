@@ -2,14 +2,12 @@ import React from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
-import { playTapFeedback } from '../utils/feedback';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 export default function IntroScreen({ navigation }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 26, duration: 520 });
 
   const handleStart = () => {
-    playTapFeedback();
     navigation.replace('Login');
   };
 

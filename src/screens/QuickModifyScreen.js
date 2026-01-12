@@ -87,8 +87,8 @@ export default function QuickModifyScreen({ navigation, route }) {
               <Switch
                 value={aiEnabled}
                 onValueChange={setAiEnabled}
-                trackColor={{ false: '#d7e9dd', true: '#16a34a' }}
-                thumbColor={aiEnabled ? '#ecfdf3' : '#FFFFFF'}
+                trackColor={{ false: '#D1D5DB', true: '#8B5CF6' }}
+                thumbColor={aiEnabled ? '#FFFFFF' : '#FFFFFF'}
               />
             </View>
 
@@ -156,7 +156,7 @@ export default function QuickModifyScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff' },
+  root: { flex: 1, backgroundColor: '#eef2ff' },
   headerBar: {
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -193,16 +193,16 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#b5e0c8',
+    borderColor: '#D1D5DB',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ecfdf3',
+    backgroundColor: '#F3F4F6',
   },
   checkboxActive: {
-    backgroundColor: '#16a34a',
-    borderColor: '#16a34a',
+    backgroundColor: '#9CA3AF',
+    borderColor: '#9CA3AF',
   },
-  checkText: { fontSize: 16, color: '#14532d' },
+  checkText: { fontSize: 16, color: '#4B5563' },
   filterInput: {
     borderWidth: 1,
     borderColor: '#9CA3AF',
@@ -214,27 +214,27 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   inputButton: {
-    backgroundColor: '#15803d',
+    backgroundColor: '#6B7280',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 20,
   },
-  inputButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  inputButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 18,
   },
-  switchLabel: { fontSize: 14, color: '#14532d' },
+  switchLabel: { fontSize: 14, color: '#6B7280' },
   primaryButton: {
-    backgroundColor: '#0f3d2e',
+    backgroundColor: '#111827',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
