@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Animated, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from 'react-native';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { FileVideo, Image as ImageIcon, FileText, File } from 'lucide-react-native';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
@@ -40,105 +41,25 @@ export default function InputOverviewScreen({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [files, setFiles] = useState(initialFiles);
-  const filesRef = useRef(initialFiles);
-  const [draggingId, setDraggingId] = useState(null);
-  const draggingIdRef = useRef(null);
-  const dragY = useRef(new Animated.Value(0)).current;
-  const dragIndexRef = useRef(0);
-  const dragStartYRef = useRef(0);
-  const longPressTimerRef = useRef(null);
-  const AnimatedPressable = useRef(Animated.createAnimatedComponent(Pressable)).current;
-  const ITEM_HEIGHT = 72;
-  const ITEM_SPACING = 10;
-  const ITEM_TOTAL = ITEM_HEIGHT + ITEM_SPACING;
-
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-  const moveItem = (list, from, to) => {
-    if (from === to) return list;
-    const next = [...list];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    return next;
-  };
-
-  const startDrag = (index, id) => {
-    dragIndexRef.current = index;
-    dragY.setValue(0);
-    draggingIdRef.current = id;
-    setDraggingId(id);
-  };
-
-  const scheduleLongPress = (index, id) => {
-    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-    longPressTimerRef.current = setTimeout(() => startDrag(index, id), 180);
-  };
-
-  const clearLongPress = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  };
-
-  const endDrag = (gestureDy) => {
-    setFiles((prev) => {
-      const from = dragIndexRef.current;
-      const to = clamp(from + Math.round(gestureDy / ITEM_TOTAL), 0, prev.length - 1);
-      const next = moveItem(prev, from, to);
-      filesRef.current = next;
-      return next;
-    });
-    dragY.setValue(0);
-    draggingIdRef.current = null;
-    setDraggingId(null);
-    clearLongPress();
-  };
 
   const removeItem = (id) => {
     playTrashFeedback();
-    setFiles((prev) => {
-      const next = prev.filter((f) => f.id !== id);
-      filesRef.current = next;
-      return next;
-    });
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const renderItem = ({ item, index }) => {
+  const renderItem = ({ item, index, drag, isActive }) => {
     const IconComp = iconMap[item.type] || File;
-    const isDragging = draggingId === item.id;
+    const fallbackIndex = files.findIndex((f) => f.id === item.id);
+    const displayIndex = Number.isFinite(index) ? index + 1 : (fallbackIndex >= 0 ? fallbackIndex + 1 : 0);
     return (
-      <AnimatedPressable
-        onPressIn={() => scheduleLongPress(index, item.id)}
-        onPressOut={() => clearLongPress()}
-        onMoveShouldSetResponder={() => draggingIdRef.current === item.id}
-        onMoveShouldSetResponderCapture={() => draggingIdRef.current === item.id}
-        onResponderGrant={(evt) => { dragStartYRef.current = evt.nativeEvent.pageY || 0; }}
-        onResponderMove={(evt) => {
-          if (draggingIdRef.current !== item.id) return;
-          const pageY = evt.nativeEvent.pageY || 0;
-          const dy = pageY - dragStartYRef.current;
-          dragY.setValue(dy);
-        }}
-        onResponderRelease={(evt) => {
-          if (draggingIdRef.current !== item.id) return;
-          const pageY = evt.nativeEvent.pageY || 0;
-          const dy = pageY - dragStartYRef.current;
-          endDrag(dy);
-        }}
-        onResponderTerminate={(evt) => {
-          if (draggingIdRef.current !== item.id) return;
-          const pageY = evt.nativeEvent.pageY || 0;
-          const dy = pageY - dragStartYRef.current;
-          endDrag(dy);
-        }}
-        style={[
-          styles.listItem,
-          isDragging && styles.draggingItem,
-          isDragging && { transform: [{ translateY: dragY }] },
-        ]}
+      <TouchableOpacity
+        style={[styles.listItem, isActive && styles.draggingItem]}
+        onLongPress={drag}
+        delayLongPress={160}
+        activeOpacity={0.9}
       >
         <View style={styles.priorityBadge}>
-          <Text style={styles.priorityText}>{index + 1}</Text>
+          <Text style={styles.priorityText}>{displayIndex}</Text>
         </View>
         <View style={styles.iconWrap}>
           <IconComp size={28} color="#111827" strokeWidth={2.2} />
@@ -150,7 +71,7 @@ export default function InputOverviewScreen({ navigation, route }) {
         <TouchableOpacity style={styles.deleteBtn} onPress={() => removeItem(item.id)}>
           <Ionicons name="remove-circle" size={22} color="#111827" />
         </TouchableOpacity>
-      </AnimatedPressable>
+      </TouchableOpacity>
     );
   };
 
@@ -167,14 +88,15 @@ export default function InputOverviewScreen({ navigation, route }) {
       </View>
 
       <Animated.View style={[styles.mainArea, entryStyle]}>
-        <FlatList
+        <DraggableFlatList
           data={files}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          onDragEnd={({ data }) => setFiles(data)}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          activationDistance={6}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={!draggingId}
         />
 
         {menuOpen && (
@@ -256,9 +178,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   draggingItem: {
-    zIndex: 5,
+    opacity: 0.95,
+    borderColor: '#9CA3AF',
     shadowColor: '#111827',
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,

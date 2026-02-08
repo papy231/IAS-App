@@ -7,8 +7,8 @@ import {
   SafeAreaView,
   ScrollView,
   TextInput,
-  Switch,
   Animated,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
@@ -27,6 +27,7 @@ export default function QuickModifyScreen({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [filter, setFilter] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [showAiInfo, setShowAiInfo] = useState(false);
   const [checklistItems, setChecklistItems] = useState([
     { id: 'recordings', label: 'Recordings', count: getRecordCount() },
     { id: 'drawing', label: 'Drawing', count: getDrawCount() },
@@ -55,6 +56,16 @@ export default function QuickModifyScreen({ navigation, route }) {
 
   const toggleItem = (id) => {
     setSelectedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+  
+  const handleAiToggle = (next) => {
+    if (next) {
+      setAiEnabled(true);
+      setShowAiInfo(true);
+    } else {
+      setAiEnabled(false);
+      setShowAiInfo(false);
+    }
   };
 
   return (
@@ -100,12 +111,13 @@ export default function QuickModifyScreen({ navigation, route }) {
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Allow AI content</Text>
-              <Switch
-                value={aiEnabled}
-                onValueChange={setAiEnabled}
-                trackColor={{ false: '#D1D5DB', true: '#8B5CF6' }}
-                thumbColor={aiEnabled ? '#FFFFFF' : '#FFFFFF'}
-              />
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handleAiToggle(!aiEnabled)}
+                style={[styles.switchTrack, aiEnabled && styles.switchTrackOn]}
+              >
+                <View style={[styles.switchThumb, aiEnabled && styles.switchThumbOn]} />
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -149,6 +161,38 @@ export default function QuickModifyScreen({ navigation, route }) {
           </View>
         )}
       </Animated.View>
+
+      <Modal
+        visible={showAiInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAiInfo(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalText}>
+              AI content may add related inspiration beyond your inputs.
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancel]}
+                onPress={() => {
+                  setAiEnabled(false);
+                  setShowAiInfo(false);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalOk]}
+                onPress={() => setShowAiInfo(false)}
+              >
+                <Text style={styles.modalOkText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom navigation */}
       <View style={styles.bottomNav}>
@@ -258,6 +302,23 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   switchLabel: { fontSize: 14, color: '#6B7280' },
+  switchTrack: {
+    width: 46,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#D1D5DB',
+    padding: 3,
+    justifyContent: 'center',
+  },
+  switchTrackOn: { backgroundColor: '#8B5CF6' },
+  switchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    transform: [{ translateX: 0 }],
+  },
+  switchThumbOn: { transform: [{ translateX: 20 }] },
   primaryButton: {
     backgroundColor: '#111827',
     borderRadius: 10,
@@ -321,4 +382,27 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
   },
   menuItemText: { fontSize: 18, color: '#111827', fontWeight: '600' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  modalText: { fontSize: 14, color: '#111827', lineHeight: 20, marginBottom: 16 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+  modalButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
+  modalCancel: { backgroundColor: '#F3F4F6' },
+  modalOk: { backgroundColor: '#111827' },
+  modalCancelText: { color: '#111827', fontWeight: '600' },
+  modalOkText: { color: '#FFFFFF', fontWeight: '600' },
 });

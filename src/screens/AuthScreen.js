@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ export default function AuthScreen({ navigation }) {
   const [error, setError] = useState('');
 
   function validateAndSubmit() {
+    Keyboard.dismiss();
     setError('');
     if (!email) {
       setError('Please enter your email');
@@ -94,7 +96,11 @@ export default function AuthScreen({ navigation }) {
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <TouchableOpacity style={styles.primaryButton} onPress={validateAndSubmit}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPressIn={validateAndSubmit}
+                activeOpacity={0.9}
+              >
                 <Text style={styles.primaryButtonText}>{mode === 'login' ? 'Sign in' : 'Create account'}</Text>
               </TouchableOpacity>
 
