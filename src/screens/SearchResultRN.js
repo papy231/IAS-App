@@ -58,6 +58,7 @@ export default function SearchResultRN({ navigation }) {
             renderItem={renderItem}
             keyExtractor={(item) => item.id.toString()}
             numColumns={3}
+            ListHeaderComponent={<Text style={styles.tooltipText}>View and save files to your library</Text>}
             contentContainerStyle={styles.list}
           />
         ) : (
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   title: { fontSize: 20, fontWeight: '600', color: palette.foreground },
+  tooltipText: { fontSize: 12, color: '#6b7280', marginTop: 6, marginBottom: 8, textAlign: 'center' },
   headerSpacer: { width: 32 },
   menuButton: { padding: 6 },
   list: { paddingHorizontal: 12, paddingBottom: 24, paddingTop: 6 },

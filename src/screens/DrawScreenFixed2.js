@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Scrol
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 import { playTapFeedback } from '../utils/feedback';
+import { incrementDrawCount } from '../data/searchState';
 
 function WebInlineCanvas({ navigation }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 14 });
@@ -230,6 +231,7 @@ function WebInlineCanvas({ navigation }) {
     if (!canvasRef.current) return;
     const data = canvasRef.current.toDataURL('image/png');
     console.log('draw-export', { data, elements: elementsRef.current });
+    incrementDrawCount();
       navigation.navigate('Welcome', { drawingData: data, elements: elementsRef.current });
   }
 

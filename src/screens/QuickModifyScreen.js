@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
-import { setHasSearched } from '../data/searchState';
+import { getDrawCount, getRecordCount, getUploadCount, setHasSearched } from '../data/searchState';
 
 let BlurViewComponent = View;
 try {
@@ -22,22 +22,36 @@ try {
   BlurViewComponent = View;
 }
 
-const checklistItems = [
-  { id: 'pictures', label: 'Pictures', count: 4 },
-  { id: 'recordings', label: 'Recordings', count: 5 },
-  { id: 'drawing', label: 'Drawing', count: 1 },
-  { id: 'files', label: 'Files', count: 7 },
-];
-
 export default function QuickModifyScreen({ navigation, route }) {
   const currentRoute = route?.name || 'QuickModify';
   const { style: entryStyle } = useEntryAnimation({ offset: 18 });
   const [filter, setFilter] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [checklistItems, setChecklistItems] = useState([
+    { id: 'recordings', label: 'Recordings', count: getRecordCount() },
+    { id: 'drawing', label: 'Drawing', count: getDrawCount() },
+    { id: 'files', label: 'Files', count: getUploadCount() },
+  ]);
   const [selectedMap, setSelectedMap] = useState(() =>
-    checklistItems.reduce((acc, item) => ({ ...acc, [item.id]: true }), {}),
+    checklistItems.reduce((acc, item) => ({ ...acc, [item.id]: item.count >= 1 }), {}),
   );
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const nextItems = [
+        { id: 'recordings', label: 'Recordings', count: getRecordCount() },
+        { id: 'drawing', label: 'Drawing', count: getDrawCount() },
+        { id: 'files', label: 'Files', count: getUploadCount() },
+      ];
+      setChecklistItems(nextItems);
+      setSelectedMap((prev) => ({
+        ...prev,
+        ...nextItems.reduce((acc, item) => ({ ...acc, [item.id]: item.count >= 1 }), {}),
+      }));
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const toggleItem = (id) => {
     setSelectedMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -82,6 +96,7 @@ export default function QuickModifyScreen({ navigation, route }) {
             <TouchableOpacity style={styles.inputButton} onPress={() => navigation.navigate('InputOverview')}>
               <Text style={styles.inputButtonText}>Input Files</Text>
             </TouchableOpacity>
+            <Text style={styles.inputTooltip}>Prioritise and delete your input files.</Text>
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Allow AI content</Text>
@@ -235,6 +250,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  inputTooltip: { color: '#6b7280', fontSize: 12, textAlign: 'center', marginTop: -10, marginBottom: 16 },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

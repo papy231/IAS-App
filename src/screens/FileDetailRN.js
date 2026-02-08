@@ -11,8 +11,9 @@ export default function FileDetailRN({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
   const startIndex = route?.params?.index ?? 0;
   const [index, setIndex] = useState(startIndex);
-  const [liked, setLiked] = useState(false);
+  const [likedMap, setLikedMap] = useState({});
   const file = fileResults[index] || fileResults[0];
+  const isLiked = !!likedMap[file.id];
 
   const renderBadge = () => {
     const label = file.type.toUpperCase();
@@ -41,8 +42,11 @@ export default function FileDetailRN({ navigation, route }) {
 
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => {}} style={styles.iconBtn}><Trash2 size={26} color={palette.foreground} /></TouchableOpacity>
-          <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.iconBtn}>
-            <Heart size={26} color={liked ? '#ef4444' : palette.foreground} fill={liked ? '#ef4444' : 'none'} />
+          <TouchableOpacity
+            onPress={() => setLikedMap((prev) => ({ ...prev, [file.id]: !prev[file.id] }))}
+            style={styles.iconBtn}
+          >
+            <Heart size={26} color={isLiked ? '#ef4444' : palette.foreground} fill={isLiked ? '#ef4444' : 'none'} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('ProjectLibraryRN', { saveMode: true, fileToSave: file })} style={styles.iconBtn}>
             <Download size={26} color={palette.foreground} />

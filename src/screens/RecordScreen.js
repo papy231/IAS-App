@@ -3,6 +3,7 @@ import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Animated } from
 import { Ionicons } from '@expo/vector-icons';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 import { playTapFeedback } from '../utils/feedback';
+import { incrementRecordCount } from '../data/searchState';
 
 export default function RecordScreen({ navigation, route }) {
   const { style: entryStyle } = useEntryAnimation({ offset: 16 });
@@ -60,6 +61,7 @@ export default function RecordScreen({ navigation, route }) {
 
   function confirmAndExit() {
     playTapFeedback();
+    incrementRecordCount();
     navigation.navigate('Welcome');
   }
 
@@ -104,14 +106,14 @@ export default function RecordScreen({ navigation, route }) {
               ]}
               onPress={togglePauseResume}
             >
-              <Text style={styles.primaryText}>{status === 'recording' ? 'Stop' : 'Continue'}</Text>
+              <Text style={styles.primaryText}>{status === 'recording' ? 'Pause' : 'Continue'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.primaryButton, { marginTop: 12, backgroundColor: '#22c55e' }]}
               onPress={validateRecording}
             >
-              <Text style={styles.primaryText}>Validate</Text>
+              <Text style={styles.primaryText}>Stop Recording</Text>
             </TouchableOpacity>
           </View>
         )}

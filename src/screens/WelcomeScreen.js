@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Platform, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { setHasSearched } from '../data/searchState';
+import { getRecordCount, getDrawCount, getUploadCount, incrementUploadCount, resetSearchState } from '../data/searchState';
 import { useEntryAnimation } from '../hooks/useEntryAnimation';
 
 let BlurViewComponent = View;
@@ -15,6 +15,9 @@ try {
 export default function WelcomeScreen({ navigation }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [keywords, setKeywords] = useState('');
+  const [recordCount, setRecordCount] = useState(getRecordCount());
+  const [drawCount, setDrawCount] = useState(getDrawCount());
+  const [uploadCount, setUploadCount] = useState(getUploadCount());
   const cardAnimations = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
   const { style: screenEntryStyle } = useEntryAnimation({ offset: 12, duration: 360 });
 
@@ -35,6 +38,15 @@ export default function WelcomeScreen({ navigation }) {
       ),
     ).start();
   }, [cardAnimations]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setRecordCount(getRecordCount());
+      setDrawCount(getDrawCount());
+      setUploadCount(getUploadCount());
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const openFilePicker = async () => {
     try {
@@ -84,7 +96,11 @@ export default function WelcomeScreen({ navigation }) {
   const handleNav = (screen) => {
     setMenuOpen(false);
     if (screen === 'Welcome') {
-      setHasSearched(false);
+      resetSearchState();
+      setKeywords('');
+      setRecordCount(0);
+      setDrawCount(0);
+      setUploadCount(0);
     }
     if (screen) navigation.navigate(screen);
   };
@@ -166,15 +182,27 @@ export default function WelcomeScreen({ navigation }) {
             {/* Action buttons */}
             <TouchableOpacity style={styles.actionButton} onPress={withFeedback(() => navigation.navigate('Record'))}>
               <Text style={styles.actionButtonText}>Record your voice</Text>
+              {recordCount >= 1 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{recordCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton} onPress={withFeedback(() => navigation.navigate('Draw'))}>
               <Text style={styles.actionButtonText}>Draw</Text>
+              {drawCount >= 1 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{drawCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
             onPress={withFeedback(async () => {
+              incrementUploadCount();
+              setUploadCount(getUploadCount());
               try {
                 const picker = await import('expo-document-picker');
                 const result = await picker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
@@ -187,6 +215,11 @@ export default function WelcomeScreen({ navigation }) {
             })}
           >
             <Text style={styles.actionButtonText}>Upload your Files</Text>
+            {uploadCount >= 1 && (
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>{uploadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
             <Text style={styles.fileHint}>MP4, PDF, DOC, XLSX</Text>
@@ -195,12 +228,18 @@ export default function WelcomeScreen({ navigation }) {
             <TouchableOpacity
               style={styles.resetButton}
               onPress={withFeedback(() => {
-                setHasSearched(false);
+                resetSearchState();
                 setKeywords('');
+                setRecordCount(0);
+                setDrawCount(0);
+                setUploadCount(0);
               })}
             >
               <Text style={styles.resetButtonText}>Reset search</Text>
             </TouchableOpacity>
+            <Text style={styles.resetHint}>
+              Start adding data to your search to get your first inspirations.
+            </Text>
           </ScrollView>
         </View>
 
@@ -286,11 +325,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111827',
   },
-  actionButton: { backgroundColor: '#FFFFFF', borderRadius: 8, paddingVertical: 14, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: '#D1D5DB', width: '100%' },
+  actionButton: { backgroundColor: '#FFFFFF', borderRadius: 8, paddingVertical: 14, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: '#D1D5DB', width: '100%', position: 'relative' },
   actionButtonText: { color: '#4B5563', fontSize: 14, fontWeight: '500' },
+  countBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: '#9CA3AF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  countBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
   fileHint: { textAlign: 'center', color: '#9CA3AF', fontSize: 12, marginBottom: 20 },
   resetButton: { backgroundColor: '#4B5563', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginBottom: 24, width: '100%' },
   resetButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  resetHint: { textAlign: 'center', color: '#6B7280', fontSize: 12, marginTop: -12, marginBottom: 24, paddingHorizontal: 8 },
   bottomNav: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
   navItem: { alignItems: 'center', gap: 6 },
   navLabel: { fontSize: 11, color: '#6B7280' },
